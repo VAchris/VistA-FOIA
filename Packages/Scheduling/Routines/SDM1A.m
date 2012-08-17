@@ -1,5 +1,5 @@
-SDM1A ;SF/GFT,ALB/TMP - MAKE APPOINTMENT ; 8/18/05 12:57pm  ; 6/22/09 6:16pm
- ;;5.3;Scheduling;**26,94,155,206,168,223,241,263,327,478,446,544**;Aug 13, 1993;Build 11
+SDM1A ;SF/GFT,ALB/TMP - MAKE APPOINTMENT ; 07/19/2012
+ ;;5.3;Scheduling;**26,94,155,206,168,223,241,263,327,478,446,544,260003**;Aug 13, 1993;Build 11
 OK I $D(SDMLT) D ^SDM4 Q:X="^"!(SDMADE=2)
  S ^SC(SC,"ST",$P(SD,"."),1)=S,^DPT(DFN,"S",SD,0)=SC,^SC(SC,"S",SD,0)=SD S:'$D(^DPT(DFN,"S",0)) ^(0)="^2.98P^^" S:'$D(^SC(SC,"S",0)) ^(0)="^44.001DA^^" L
 S1 L +^SC(SC,"S",SD,1):$G(DILOCKTM,5) W:'$T "Another user is editing this record.  Trying again.",! G:'$T S1 F SDY=1:1 I '$D(^SC(SC,"S",SD,1,SDY)) S:'$D(^(0)) ^(0)="^44.003PA^^" S ^(SDY,0)=DFN_U_(+SL)_"^^^^"_$G(DUZ)_U_DT L -^SC(SC,"S",SD,1) Q

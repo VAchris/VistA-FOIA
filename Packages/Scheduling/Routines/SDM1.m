@@ -1,5 +1,5 @@
-SDM1 ;SF/GFT - MAKE APPOINTMENT ; 3/29/05 12:35pm [5/5/05 9:41am]  ; Compiled March 8, 2007 14:55:24  ; Compiled May 9, 2007 13:19:18  ; Compiled August 28, 2007 12:19:08
- ;;5.3;Scheduling;**32,167,168,80,223,263,273,408,327,478,490,446,547**;Aug 13, 1993;Build 17
+SDM1 ;SF/GFT - MAKE APPOINTMENT ; 07/25/2012  ; Compiled March 8, 2007 14:55:24  ; Compiled May 9, 2007 13:19:18  ; Compiled August 28, 2007 12:19:08
+ ;;5.3;Scheduling;**32,167,168,80,223,263,273,408,327,478,490,446,547,260003**;Aug 13, 1993;Build 17
 1 L  Q:$D(SDXXX)  S CCXN=0 K MXOK,COV,SDPROT Q:DFN<0  S SC=+SC
  S X1=DT S SDEDT=CLN("MAX # DAYS FOR FUTURE BOOKING")
  S:$L(SDEDT)'>0 SDEDT=365
@@ -44,17 +44,17 @@ ADT S:'$D(SDW) SDW=""
  I $E($P(X,"@",2),1,4)?1.4"0" K %DT S X=$P(X,"@"),X=$S($L(X):X,1:"T"),%DT="XF" D ^%DT G ADT:Y'>0 S X1=Y,X2=-1 D C^%DTC S X=X_.24
  K %DT S %DT="TXEF" D ^%DT
  I $P(Y,".",2)=24 S X1=$P(Y,"."),X2=1 D C^%DTC S Y=X_".000001"
- D MAKE(DFN,SC,Y,SDAPTYP,SL)
+ D MAKE(DFN,SC,Y,SDAPTYP,SDXSCAT,SL,$P(SDSRTY,U,2))
  Q
-MAKE(DFN,SC,SD,TYP,SL,LVL) ; Make appointmemnt
- S %=$$MAKE^SDMAPI2(.ERR,DFN,SC,SD,TYP,SL,.LVL)
+MAKE(DFN,SC,SD,TYP,STYP,SL,SRT,LVL) ; Make appointmemnt
+ S %=$$MAKE^SDMAPI2(.ERR,DFN,SC,SD,TYP,STYP,SL,SRT,,.LVL)
  I ERR=0 D
  . I $P(ERR(0),U,3)=1 W !!,$P(ERR(0),U,2),! G 1
  . I $P(ERR(0),U,3)>1 D
  . . S TXT1="...OK"
  . . S:$P(ERR(0),U)="APTPAHA" TXT1="DO YOU WANT TO CANCEL IT"
  . . S OV=$$OVB($P(ERR(0),U,2),TXT1) I OV=2 G 1
- . . I OV=1 D MAKE(DFN,SC,SD,TYP,SL,$P(ERR(0),U,3)-1)
+ . . I OV=1 D MAKE(DFN,SC,SD,TYP,STYP,SL,SRT,$P(ERR(0),U,3)-1)
  Q
  ;
  ;SD*5.3*408  verify that day hasn't been canceled via "SET UP A CLINIC"
@@ -103,7 +103,7 @@ SP I ST+ST>$L(S),$L(S)<80 S S=S_" " G SP
  Q:SDMM  G OK^SDM1A:SM#9=0,^SDM3:$P(SL,U,7)]""&('$D(MXOK))
  ;
 OVB(TXT,TXT1) ;
-OVB1
+OVB1 ;
  S %=2 W *7,!,TXT,TXT1 D YN^DICN
  I '% W !,"RESPOND YES OR NO" G OVB1
  Q %

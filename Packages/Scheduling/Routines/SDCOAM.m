@@ -1,5 +1,5 @@
-SDCOAM ;ALB/RMO - Appt Mgmt Actions - Check Out; 11 FEB 1993 10:00 am
- ;;5.3;Scheduling;**1,20,27,66,132**;08/13/93
+SDCOAM ;ALB/RMO - Appt Mgmt Actions - Check Out; 08/10/2012
+ ;;5.3;Scheduling;**1,20,27,66,132,260003**;08/13/93
  ;
 CO(SDCOACT,SDCOACTD) ;Check Out Classification, Provider and Diagnosis
  ;                Actions on Appt Mgmt
@@ -90,16 +90,10 @@ DEL ;Entry point for SDAM DELETE CHECK OUT protocol
  F  S SDCOAP=$O(VALMY(SDCOAP)) Q:'SDCOAP  D
  .I $D(^TMP("SDAMIDX",$J,SDCOAP)) K SDAT S SDAT=^(SDCOAP) D
  ..W !!,^TMP("SDAM",$J,+SDAT,0)
- ..S DFN=+$P(SDAT,"^",2),SDT=+$P(SDAT,"^",3),SDCL=+$P(SDAT,"^",4),SDDA=$$FIND^SDAM2(DFN,SDT,SDCL)
- ..S SDOE=+$P($G(^DPT(DFN,"S",SDT,0)),"^",20)
- ..I 'SDOE!('$$CODT^SDCOU(DFN,SDT,SDCL)) W !!,*7,">>> The appointment must have a check out date/time to delete." D PAUSE^VALM1 Q
+ ..S DFN=+$P(SDAT,"^",2),SDT=+$P(SDAT,"^",3),SDCL=+$P(SDAT,"^",4)
  ..I '$$ASK Q
- ..N SDATA,SDELHDL
- ..IF '$$EDITOK^SDCO3(SDOE,1) Q
- ..S SDELHDL=$$HANDLE^SDAMEVT(1)
- ..D EN^SDCODEL(SDOE,1,SDELHDL),PAUSE^VALM1
+ ..S %=$$DELCO^SDMAPI4(.RETURN,DFN,SDT)
  ..D BLD^SDAM
- ..S SDOE=$$GETAPT^SDVSIT2(DFN,SDT,SDCL)
  S VALMBCK="R"
  K SDAT
 DELQ Q

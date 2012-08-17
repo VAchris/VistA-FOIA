@@ -1,10 +1,10 @@
-SDCO1 ;ALB/RMO - Appointment - Check Out;Apr 23 1999  ; 12/11/08 5:30pm  ; Compiled December 12, 2008 13:01:34
- ;;5.3;Scheduling;**27,132,149,193,250,296,446,538**;08/13/93;Build 5
+SDCO1 ;ALB/RMO - Appointment - Check Out;08/10/2012  ; Compiled December 12, 2008 13:01:34
+ ;;5.3;Scheduling;**27,132,149,193,250,296,446,538,260003**;08/13/93;Build 5
  ;
  ;check out if sd/369 is released before 446!!!
  ;
 EN ;Entry point for SDCO APPT CHECK OUT protocol
- N SDCOALBF,SDCOAP,SDCOBG,SDCODT,VALMY
+ N SDCOALBF,SDCOAP,SDCOBG,SDCODT,VALMY,RETURN
  S VALMBCK=""
  D EN^VALM2(XQORNOD(0))
  D FULL^VALM1
@@ -12,7 +12,11 @@ EN ;Entry point for SDCO APPT CHECK OUT protocol
  F  S SDCOAP=$O(VALMY(SDCOAP)) Q:'SDCOAP  D
  .I $D(^TMP("SDAMIDX",$J,SDCOAP)) K SDAT S SDAT=^(SDCOAP) D
  ..W !!,^TMP("SDAM",$J,+SDAT,0)
- ..I $$CHK^SDCOU(SDCOAP) D CO(+$P(SDAT,"^",2),+$P(SDAT,"^",3),+$P(SDAT,"^",4),+$P(SDAT,"^",5),0,SDCODT,"CO",+SDAT,.SDCOALBF)
+ ..K RETURN
+ ..S %=$$CHKCO^SDMAPI4(.RETURN,+$P(SDAT,"^",2),+$P(SDAT,"^",3))
+ ..I RETURN=0 W !!,*7,RETURN(0) Q
+ ..D CO(+$P(SDAT,"^",2),+$P(SDAT,"^",3),+$P(SDAT,"^",4),+$P(SDAT,"^",5),0,SDCODT,"CO",+SDAT,.SDCOALBF)
+ ..I RETURN=0 W !!,*7,RETURN(0)
  I $G(SDCOALBF) S SDCOBG=VALMBG W ! D BLD^SDAM S:$D(@VALMAR@(SDCOBG,0)) VALMBG=SDCOBG
  S VALMBCK="R"
  K SDAT
@@ -29,37 +33,29 @@ CO(DFN,SDT,SDCL,SDDA,SDASK,SDCODT,SDCOACT,SDLNE,SDCOALBF) ;Appt Check Out
  ;           SDLNE    Appt Mgmt Line Number       [Optional]
  ; Output -- SDCOALBF Re-build Appt Mgmt List
  I $D(XRTL) D T0^%ZOSV
- N SDCOQUIT,SDOE,SDATA
- S:'SDDA SDDA=$$FIND^SDAM2(DFN,SDT,SDCL)
- I 'SDDA W !!,*7,">>> You cannot check out this appointment." D PAUSE^VALM1 G COQ
- S SDATA=$G(^DPT(DFN,"S",SDT,0))
- ; ** MT Blocking removed
- ;S X="EASMTCHK" X ^%ZOSF("TEST") I $T,$G(EASACT)'="W",$$MT^EASMTCHK(DFN,$P($G(SDATA),U,16),"C",$G(SDT)) D PAUSE^VALM1 G COQ
- ;
- ;-- if new encounter, pass to PCE
- I $$NEW^SDPCE(SDT) D  S VALMBCK="R",SDCOALBF=1 G COQ
- . N SDCOED
- . S SDOE=$$GETAPT^SDVSIT2(DFN,SDT,SDCL)
- . ;
+ N SDCOQUIT,SDOE,SDATA,NEWE,IND,RETURN
+ S NEWE=1
+ S %=$$CHECKO^SDMAPI4(.RETURN,DFN,SDT,SDCL)
+ I 'RETURN W !!,*7,RETURN(0) D PAUSE^VALM1 G COQ
+ S SDOE=RETURN("SDOE")
+ S IND=0
+ F  S IND=$O(RETURN(IND)) Q:IND=""  I $P(RETURN(IND),U)="APTCONW" S NEWE=0 Q
+ I NEWE D  S VALMBCK="R",SDCOALBF=1 G COQ
  . ; -- has appt already been checked out
- . S SDCOED=$$CHK($TR($$STATUS^SDAM1(DFN,SDT,SDCL,SDATA,SDDA),";","^"))
- . ;
+ . S SDCOED=$G(RETURN("CO"))
  . ; -- if not checked out then do interview process
- . IF '$$CODT^SDCOU(DFN,SDT,SDCL) D
+ . IF 'RETURN("COD") D
  . . N SDCOMKF,SDTRES
- . . ;
  . . ; -- first, check if should make follow-up appt
  . . IF $G(SDCOACT)="CO",'SDCOED D
  . . . N SDCOMKF
  . . . D MC^SDCO5(SDOE,1,.SDCOMKF,.SDCOQUIT) Q:$D(SDCOQUIT)
- . . . ;
  . . . ; -- Set flag to re-build appointment list
  . . . IF $G(SDCOMKF) S SDCOALBF=1
- . . ;
  . . ; -- c/o interview if user didn't quit
  . . I '$D(SDCOQUIT),'SDCOED D
  . . . N SDAPTYP
- . . . S SDTRES=$$INTV^PXAPI("INTV","SD","PIMS",$P($G(^SCE(+SDOE,0)),U,5),$P($G(^SCE(+SDOE,0)),U,4),DFN)
+ . . . S SDTRES=$$INTV^PXAPI("INTV","SD","PIMS",RETURN("VISIT"),RETURN("LOCATION"),DFN)
  . . . Q:SDTRES<0
  . . . ;
  . . . ; -- ask user if they want to see c/o screen
@@ -67,7 +63,7 @@ CO(DFN,SDT,SDCL,SDDA,SDASK,SDCODT,SDCOACT,SDLNE,SDCOALBF) ;Appt Check Out
  . . . I 'SDGAFC D
  . . . .N SDELIG
  . . . .S SDELIG=$$ELSTAT^SDUTL2(DFN)
- . . . .I $$MHCLIN^SDUTL2(SDCL),'($$COLLAT^SDUTL2(SDELIG)!$P(SDATA,U,11)) D
+ . . . .I $$MHCLIN^SDUTL2(SDCL),'($$COLLAT^SDUTL2(SDELIG)!RETURN("COVISIT")) D
  . . . . .I $$NEWGAF^SDUTL2(DFN) D
  . . . . . .I '$$GAFCM^SDUTL2() S SDGAFC=1
  . . .I SDGAFC D EN^SDCO(SDOE,,1)
@@ -76,7 +72,6 @@ CO(DFN,SDT,SDCL,SDDA,SDASK,SDCODT,SDCOACT,SDLNE,SDCOALBF) ;Appt Check Out
  . E  D EN^SDCO(SDOE,,1)
  ;
  ; -- view if old encounters
- S SDOE=$$GETAPT^SDVSIT2(DFN,SDT,SDCL)
  D EN^SDCO(SDOE,,1)
  ;
 COQ K % D EWLCHK Q

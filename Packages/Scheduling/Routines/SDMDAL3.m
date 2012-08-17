@@ -1,5 +1,5 @@
-SDMDAL3 ;MAKE APPOINTMENT DAL; 05/28/2012  11:46 AM
- ;;;Scheduling;;05/28/2012;
+SDMDAL3 ;RGI/CBR - APPOINTMENT API; 08/10/2012
+ ;;5.3;scheduling;**260003**;08/13/93;
 GETPATS(RETURN,SEARCH,START,NUMBER) ; Get patients
  N FILE,FIELDS,RET,SCR,INDX
  S FILE="2",FIELDS="@;.01;.03;.09;391;1901",INDX="B"
@@ -66,7 +66,7 @@ GETAPPS(RETURN,DFN,SD) ; Get day appointment
  . S RETURN(SD)=+^(S,0)
  Q
  ;
-MAKE(DFN,SD,SC,TYPE,STAT,RSN) ; Make patient appointment
+MAKE(DFN,SD,SC,TYPE,STYP,STAT,RSN,USR,DT,SRT,NAAI) ; Make patient appointment
  N ERR,FDA,IENS
  I $D(^DPT(DFN,"S",SD,0)),$P(^(0),U,2)["C" D
  . S IENS=SD_","_DFN_","
@@ -75,7 +75,7 @@ MAKE(DFN,SD,SC,TYPE,STAT,RSN) ; Make patient appointment
  . S FDA(2.98,IENS,"9")=$G(RSN)
  . S FDA(2.98,IENS,"9.5")=TYPE
  . S FDA(2.98,IENS,"17")="@"
- . S FDA(2.98,IENS,"20")=$P($$NOW^XLFDT,".")
+ . S FDA(2.98,IENS,"20")=DT
  . D FILE^DIE("","FDA","ERR")
  E  D
  . S IENS="?+2,"_DFN_","
@@ -84,7 +84,11 @@ MAKE(DFN,SD,SC,TYPE,STAT,RSN) ; Make patient appointment
  . S FDA(2.98,IENS,"3")=STAT
  . S FDA(2.98,IENS,"9")=$G(RSN)
  . S FDA(2.98,IENS,"9.5")=TYPE
- . S FDA(2.98,IENS,"20")=$P($$NOW^XLFDT,".")
+ . S FDA(2.98,IENS,"19")=USR
+ . S FDA(2.98,IENS,"20")=DT
+ . S FDA(2.98,IENS,"24")=$G(STYP)
+ . S FDA(2.98,IENS,"25")=$G(SRT)
+ . S FDA(2.98,IENS,"26")=$G(NAAI)
  . D UPDATE^DIE("","FDA","IENS","ERR")
  Q
  ;
@@ -104,5 +108,31 @@ CANCEL(RETURN,DFN,SD,TYP,RSN,RMK,CDT,USR,OUSR,ODT) ; Cancel appointment.
 GETXUS(RETURN,USR) ; Get user access
  S:$D(^XUSEC("SDOB",USR)) RETURN("SDOB")=^XUSEC("SDOB",USR)
  S:$D(^XUSEC("SDMOB",USR)) RETURN("SDMOB")=^XUSEC("SDMOB",USR)
+ Q
+ ;
+GETCENRL(RETURN,DFN,SC) ; Get clinic enrolls
+ N IND,EC,SSC
+ K RETURN S RETURN=0
+ F SSC=0:0 S SSC=$O(^DPT(DFN,"DE","B",SSC)) Q:SSC=""  D
+ . Q:$G(SC)>0&(SSC'=$G(SC))
+ . S EC=$O(^DPT(DFN,"DE","B",SSC,"")) Q:'EC
+ . S RETURN(SSC,0)=EC_U_^DPT(DFN,"DE",EC,0)
+ . F IND=0:0 S IND=$O(^DPT(DFN,"DE",EC,1,IND)) Q:IND=""  D
+ . . S RETURN(SSC,IND)=^DPT(DFN,"DE",EC,1,IND,0)
+ S RETURN=1
+ Q
+ ;
+UPDENRL(ENS,DFN) ;
+ N IENS,FDA,ERR,IND,SC
+ S SC=$O(ENS(""))
+ S IENS=ENS(SC,"IEN")_","_DFN_","
+ S FDA(2.001,IENS,2)="I"
+ D UPDATE^DIE("","FDA","ERR")
+ F IND=0:0 S IND=$O(ENS(SC,"EN",IND)) Q:IND=""  D
+ . Q:(IND'>0)
+ . S IENS=IND_","_ENS(SC,"IEN")_","_DFN_","
+ . S:$D(ENS(SC,"EN",IND,"DISCHARGE")) FDA(2.011,IENS,3)=ENS(SC,"EN",IND,"DISCHARGE")
+ . S:$D(ENS(SC,"EN",IND,"REASON")) FDA(2.011,IENS,4)=ENS(SC,"EN",IND,"REASON")
+ . D UPDATE^DIE("","FDA","ERR")
  Q
  ;

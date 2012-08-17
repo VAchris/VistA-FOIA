@@ -1,5 +1,5 @@
-SDAMN ;ALB/MJK - No-Show Appt Action ; 2/4/92
- ;;5.3;Scheduling;**478**;Aug 13, 1993
+SDAMN ;ALB/MJK - No-Show Appt Action ; 07/19/2012
+ ;;5.3;Scheduling;**478,260003**;Aug 13, 1993
  ;
 EN ; -- protocol SDAM APPT NO-SHOW entry pt
  ; input:  VALMY := array entries
@@ -32,7 +32,7 @@ NOSHOW(ERR,DFN,SD,SC,LVL) ; No-show appointment
  . I OV=1 D NOSHOW(.ERR,DFN,SD,SC,$P(ERR(0),U,3)-1)
  Q 'Y
 ALNS(TXT) ;
-ALNS1
+ALNS1 ;
  S %=2 W *7,!,TXT D YN^DICN
  I '% W !,"RESPOND YES OR NO" G ALNS1
  Q %

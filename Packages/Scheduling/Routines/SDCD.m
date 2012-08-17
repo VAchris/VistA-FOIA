@@ -1,32 +1,73 @@
-SDCD ;BSN/GRR - DISCHARGE PATIENT FROM CLINIC ;3/15/91  11:24 ;
- ;;5.3;Scheduling;**41,148**;AUG 13, 1993
-15 D:'$D(DT) DT^SDUTL I '$G(SDFN) S DIC="^DPT(",DIC(0)="AEQM" D ^DIC G:Y=-1 QUIT
- S:$G(SDFN) Y=+SDFN S DA(2)=+Y
- I '$G(SDCLN) G:'$D(^DPT(+Y,"DE")) NOPE S DIC="^DPT("_DA(2)_",""DE"",",DIC("S")="I $P(^(0),""^"",2)']""""",VAUTSTR="clinic",VAUTNI=2,VAUTVB="VAUTC" D FIRST^VAUTOMA K DIC("S") Q:Y<0
- I $G(SDCLN) D  G QUIT:'$O(VAUTC(0))
- .S VAUTC=0,VAUTC(+$O(^DPT(DA(2),"DE","B",+SDCLN,99999),-1))=+SDCLN
- .I '$O(VAUTC(0)) W !!,*7,">>> Patient not enrolled in '",$S($D(^SC(+SDCLN,0)):$P(^(0),"^"),1:"Unknown"),"' clinic." S SDAMERR=1
- I VAUTC=1 F I=0:0 S I=$O(^DPT(DA(2),"DE",I)) Q:'I  S CLINIC=^DPT(DA(2),"DE",I,0) I $P(CLINIC,U,2)']"" S VAUTC(I)=+CLINIC
- D BEFORE^SCMCEV3(DA(2)) ;setup before values
- F I=0:0 S I=$O(VAUTC(I)) Q:'I  S DA(1)=I,SC=VAUTC(I) D DIS
- I '$O(VAUTC(0)) W !!,*7,">>> Patient is not actively enrolled in any clinics." S SDAMERR=1
- I '$D(SDAMERR) D AFTER^SCMCEV3(DA(2)) ;setup after values
- ;call team event driver
- I '$D(SDAMERR) D INVOKE^SCMCEV3(DA(2))
+SDCD ;BSN/GRR - DISCHARGE PATIENT FROM CLINIC ;08/10/2012
+ ;;5.3;Scheduling;**41,148,260003**;AUG 13, 1993
+15 D:'$D(DT) DT^SDUTL
+ N ENRLS,SENS,SDAMERR
+ S SDAMERR=0
+ I '$G(SDFN) S Y=$$SELPAT() S:Y'=-1 DFN=+Y G:Y=-1 QUIT
+ S:$G(SDFN) DFN=+SDFN
+ I '$G(SDCLN) S %=$$GETPENRL^SDMAPI3(.ENRLS,DFN,,1) G:'$D(ENRLS) NOPE
+ D:'$G(SDCLN) SELCLN(.ENRLS,.SENS,"clinic")
+ I $G(SDCLN) D  G QUIT:SDAMERR>0
+ . S %=$$GETPENRL^SDMAPI3(.SENS,DFN,SDCLN)
+ . I '$D(SENS(SDCLN,"EN")) D
+ . . W !!,*7,">>> Patient not enrolled in '",SENS(SDCLN,"NAME"),"' clinic." S SDAMERR=1
+ . I $G(SENS(SDCLN,"STATUS"))]"" D
+ . . W *7,*7,!,"PATIENT ALREADY DISCHARGED FROM '",SENS(SDCLN,"NAME"),"' CLINIC",*7,*7
+ . . S SDAMERR=1 Q
+ N IND
+ F IND=0:0 S IND=$O(SENS(IND)) Q:IND=""  D
+ . W !!,"***Discharging patient from ",SENS(IND,"NAME")," Clinic***",!
+ . N ENS
+ . M ENS(IND)=SENS(IND)
+ . D DISCH(.ENS,DFN,IND)
  G 15:'$G(SDFN)
 QUIT ;
  K CLINIC,DFN,SC,SDF,SDST,VAUTC,VAUTD,VAUTNI,VAUSTR,VAUTVB,DIC
  Q
-DIS ;
- S SDF=0
- I $P(^DPT(DA(2),"DE",DA(1),0),"^",2)]"" W *7,*7,!,"PATIENT ALREADY DISCHARGED FROM '",$S($D(^SC(SC,0)):$P(^(0),U),1:"UNKNOWN"),"' CLINIC",*7,*7 S SDAMERR=1 Q
- W !!,"***Discharging patient from ",$S($D(^SC(SC,0)):$P(^(0),U),1:"UNKNOWN")," Clinic***",!
- F XX=DT_.2359:0 S XX=$O(^DPT(DA(2),"S",XX)) Q:XX'>0  I $P(^(XX,0),"^",1)=SC,$P(^(0),"^",2)=""!($P(^(0),"^",2)="I") W !?10,*7,"PATIENT HAS FUTURE APPOINTMENT(S) IN THIS CLINIC" S SDF=1
- I 'SDF F XX=0:0 S XX=$O(^DPT(DA(2),"DE",DA(1),1,XX)) Q:XX=""  D STAT I SDST']"" S DIE="^DPT("_DA(2)_",""DE"","_DA(1)_",1,",DA=XX,DR="3"_$S($G(SCDISCH):"///"_SCDISCH,1:"")_";I 'X S Y=0;I X S XD=1;4" D ^DIE
- W !,*7,"Patient ",$S('$D(XD):"NOT ",XD=2:"ALREADY ",1:""),"Discharged from clinic !!",! S:SDF SDF=0,SDAMERR=1 K XD
+DISCH(ENS,DFN,SC) ;
+ N RETURN
+ D COL(.ENS,SC)
+ S %=$$DISCH^SDMAPI3(.RETURN,.ENS,DFN)
+ I RETURN=0 W $P(RETURN(0),U,2) Q
+ W !,*7,"Patient Discharged from clinic !!",!
  Q
+ ;
+COL(ENS,SC) ;
+ N IND
+ F IND=0:0 S IND=$O(ENS(SC,"EN",IND)) Q:'IND  D
+ . I ENS(SC,"EN",IND,"DISCHARGE")']"" D
+ . . K X,Y
+ . . S DIR("A")="DATE OF DISCHARGE: "
+ . . S DIR(0)="DA^"_($E(DT,1,3)-80)_":"_DT_":EX" D ^DIR
+ . . S:Y>0 ENS(SC,"EN",IND,"DISCHARGE")=Y
+ . . Q:Y="^"
+ . . K X,Y
+ . . S DIR("A")="REASON FOR DISCHARGE: "
+ . . S:$D(ENS(SC,"EN",IND,"REASON")) DIR("B")=ENS(SC,"EN",IND,"REASON")
+ . . S DIR(0)="FA^2:80:EX" D ^DIR
+ . . S:Y'="^" ENS(SC,"EN",IND,"REASON")=Y
+ K DIR
+ Q
+ ;
 NOPE W !,*7,"PATIENT NOT ENROLLED IN ANY CLINICS!!" G QUIT:$G(SDFN),15
-STAT ;ck if already discharged
- S SDST=$P(^DPT(DA(2),"DE",DA(1),1,XX,0),U,3) Q:SDST']""
- S DIE="^DPT("_DA(2)_",""DE"","_DA(1)_",1,",DA=XX,DR="3////^S X=SDST"
- L @(DIE_XX_")"):2 G:'$T STAT D ^DIE L  S:'$D(XD) XD=2 Q
+SELPAT() ; Select patient
+ N ROU,PRMPT,FILE,FLDOR,Y
+ S ROU="LSTPATS^SDMLST",PRMPT="Select PATIENT NAME: "
+ S FILE="PATIENT",FIELDS="NAME, or ABBREVIATION, or TEAM"
+ S FLDOR="NAME^BIRTHDATE^SSN^VETERAN^TYPE"
+ S Y=$$SELECT^SDMUTL(ROU,PRMPT,FILE,FIELDS,FLDOR)
+ Q $S(Y="^":-1,1:Y)
+ ;
+SELCLN(ENS,SENS,NAME) ; Select clinics
+ N LST,SLST,CNT
+ S CNT=0
+ F IND=0:0 S IND=$O(ENS(IND)) Q:IND=""  D
+ . S CNT=CNT+1
+ . S LST(CNT,"ID")=IND
+ . S LST(CNT,"NAME")=ENS(IND,"NAME")
+ S LST(0)=CNT
+ D SELSLST^SDMUTL(.LST,.SLST,"clinic")
+ K SENS
+ F IND=0:0 S IND=$O(SLST(IND)) Q:IND=""  D
+ . M SENS(SLST(IND,"ID"))=ENS(SLST(IND,"ID"))
+ Q

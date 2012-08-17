@@ -1,5 +1,5 @@
-SDAM2 ;ALB/MJK - Appt Mgt (cont); 8/18/05 12:10pm  ; Compiled April 16, 2007 09:43:32
- ;;5.3;Scheduling;**250,296,327,478,446**;Aug 13, 1993;Build 77
+SDAM2 ;ALB/MJK - Appt Mgt (cont); 07/19/2012  ; Compiled April 16, 2007 09:43:32
+ ;;5.3;Scheduling;**250,296,327,478,446,260003**;Aug 13, 1993;Build 77
  ;
 CI ; -- protocol SDAM APPT CHECK IN entry pt
  ; input:  VALMY := array entries

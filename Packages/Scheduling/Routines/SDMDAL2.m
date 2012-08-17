@@ -1,5 +1,5 @@
-SDMDAL2 ;MAKE APPOINTMENT DAL; 05/28/2012  11:46 AM
- ;;;Scheduling;;05/28/2012;
+SDMDAL2 ;RGI/CBR - APPOINTMENT API; 08/10/2012
+ ;;5.3;scheduling;**260003**;08/13/93;
 FRSTAVBL(RETURN,SC) ; Get first available date
  S RETURN=$O(^SC(+SC,"T",0))
  S RETURN=$O(^(0))
@@ -10,7 +10,7 @@ SLOTS(RETURN,SC) ; Get available slots
  Q
  ;
 SCEXST(RETURN,CSC) ; Returns Outpatient Classification Stop Code Exception status
- N FILE,STOPN,IENACT,FLDS
+ N FILE,STOPN,IENACT,FLDS,FS
  S STOPN=$$GET1^DIQ(40.7,+CSC_",",1)
  S IENACT=""
  S IENACT=$O(^SD(409.45,"B",STOPN,IENACT))
@@ -30,7 +30,7 @@ LSTAPPT(RETURN,SEARCH,START,NUMBER) ; Lists appointment types
  Q
  ;
 GETAPPT(RETURN,TYPE,INT,EXT,REZ) ; Get Appointment Type
- N FILE,FLDS
+ N FILE,FLDS,SF
  S FILE=409.1,FLDS("*")=""
  D GETREC^SDMDAL(.RETURN,TYPE,FILE,.FLDS,.SF,$G(INT),$G(EXT),$G(REZ))
  Q
@@ -48,7 +48,7 @@ HASPEND(RETURN,PAT,DT) ; Return 1 if patient has pending appointment
  Q RETURN
  ;
 GETPEND(RETURN,PAT,DT) ; Get pending appointments
- N Y
+ N Y,AP
  F Y=DT:0 S Y=$O(^DPT(PAT,"S",Y)) Q:Y'>0  D
  . S AP=^(Y,0)
  . I "I"[$P(AP,U,2) D
@@ -77,6 +77,7 @@ GETAPTS(RETURN,DFN,SD) ; Get patient appointments
  Q
  ;
 GETDAPTS(RETURN,DFN,SD) ; Get all appointments in the day
+ N NOD
  S RETURN=0
  S IND=$P(SD,".")
  F  S IND=$O(^DPT(DFN,"S",IND)) Q:IND=""!($P(IND,".")>$P(SD,"."))  D
@@ -87,7 +88,7 @@ GETDAPTS(RETURN,DFN,SD) ; Get all appointments in the day
  Q
  ;
 LSTCRSNS(RETURN,SEARCH,START,NUMBER) ; Return cancelation reasons.
- N FILE,FIELDS,RET,SCR
+ N FILE,FIELDS,RET,SCR,TYP
  S FILE="409.2",FIELDS="@;.01"
  S:$D(START)=0 START="" S:$D(SEARCH)=0 SEARCH=""
  I $D(RETURN("TYPE")) S TYP=RETURN("TYPE"),SCR="I '$P(^(0),U,4),(TYP_""B""[$P(^(0),U,2))"
@@ -113,6 +114,15 @@ LSTCIST1(RETURN,SEARCH,START,NUMBER) ; Returns the list of states that allow che
  D LIST^DIC(FILE,"",FIELDS,"",$G(NUMBER),.START,SEARCH,"ACI",.SCR,"","RETURN","ERR")
  Q
  ;
+LSTCOST1(RETURN,SEARCH,START,NUMBER) ; Returns the list of states that allow check in.
+ N FILE,FIELDS,RET,SCR
+ S FILE="409.63",FIELDS="@;.01"
+ S:$D(START)=0 START="" S:$D(SEARCH)=0 SEARCH=""
+ S START(1)=1
+ S START(2)=0
+ D LIST^DIC(FILE,"",FIELDS,"",$G(NUMBER),.START,SEARCH,"ACO",.SCR,"","RETURN","ERR")
+ Q
+ ;
 LSTNSTA1(RETURN,SEARCH,START,NUMBER) ; Returns the list of states that allow no-show.
  N FILE,FIELDS,RET,SCR
  S FILE="409.63",FIELDS="@;.01"
@@ -124,4 +134,11 @@ LSTNSTA1(RETURN,SEARCH,START,NUMBER) ; Returns the list of states that allow no-
  ;
 GETAPT0(DFN,SD) ; Get appointment 0 node
  Q $G(^DPT(DFN,"S",SD,0))
+ ;
+GETPAPT(RETURN,DFN,SD) ; Get patient appointment
+ N IND
+ F IND=0:0 S IND=$O(RETURN(IND)) Q:IND=""  D
+ . S RETURN(IND)=$$GET1^DIQ(2.98,SD_","_DFN_",",IND,"I")
+ S RETURN=1
+ Q
  ;
