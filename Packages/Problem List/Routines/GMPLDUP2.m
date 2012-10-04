@@ -1,5 +1,5 @@
-GMPLDUP2 ;SLC/JVS -- Duplicate Problem #3
- ;;2.0;Problem List;**12**;Aug 25, 1994
+GMPLDUP2 ;SLC/JVS -- Duplicate Problem #3;09/13/12
+ ;;2.0;Problem List;**12,260002**;Aug 25, 1994
  ;
  ;VARIABLES:
  ;PATIENT  = Pointer to the PATIENT/IHS #9000001
@@ -31,7 +31,7 @@ EN ; Official entry point
  D CLASS2
  D EXIT
 SEARCH ;Search for possible duplicates and locate in ^TMP("GMPLDUP")
- S TOTAL=$P(^AUPNPROB(0),"^",3)
+ ;S TOTAL=$P(^AUPNPROB(0),"^",3)
  N PATIENT,IEN,ICD,PROBLEM,CNT,CNTR
  K ^TMP("GMPLD",$J)
  S PATIENT=0,ICD=0,PROBLEM=0,CNT=0,CNTR=0
@@ -72,12 +72,12 @@ FIND2 ;
  ....E  S ^TMP("GMPLREM",IFN)=""
  D HIDE2 Q
 HIDE2 ;---Hide Duplicates and count them.
- N IFN,CNT,GMPIFN
+ N IFN,CNT,GMPIFN,%,RET
  S CNT=0
  S IFN=0 F  S IFN=$O(^TMP("GMPLREM",IFN)) Q:IFN=""  D
  .S CNT=CNT+1
  .S GMPIFN=IFN
- .D DEL
+ .S %=$$DELETE^GMPLAPI2(.RET,GMPIFN,"")
  ;---Send Bulletin
  S XMB="GMPL DUPLICATE PROBLEMS"
  S XMDUZ=$P($$SITE^VASITE,"^",2)_" "_"GMPL*2*12"
@@ -88,12 +88,6 @@ HIDE2 ;---Hide Duplicates and count them.
  ;----
  K ^TMP("GMPLREM")
  Q
-DEL ; -- delete a problem
- N PROMPT,DEFAULT,X,Y,CHNGE,GMPFLD,GMPROV,GMPSAVED
- S CHNGE=GMPIFN_"^1.02^"_$$HTFM^XLFDT($H)_U_DUZ_"^P^H^Deleted^"_+$G(GMPROV)
- S $P(^AUPNPROB(GMPIFN,1),U,2)="H",GMPSAVED=1
- D AUDIT^GMPLX(CHNGE,""),DTMOD^GMPLX(GMPIFN)
- Q
 EXIT ;-KILLS GLOBALS AND EXITS
  K ^TMP("GMPLD"),^TMP("GMPLDUP"),^TMP("GMPLREM")
- K CNT,TOTAL
+ K CNT ;,TOTAL

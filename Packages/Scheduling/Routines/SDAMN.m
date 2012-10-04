@@ -1,4 +1,4 @@
-SDAMN ;ALB/MJK - No-Show Appt Action ; 07/19/2012
+SDAMN ;ALB/MJK - No-Show Appt Action ; 09/25/2012
  ;;5.3;Scheduling;**478,260003**;Aug 13, 1993
  ;
 EN ; -- protocol SDAM APPT NO-SHOW entry pt
@@ -13,23 +13,26 @@ EN ; -- protocol SDAM APPT NO-SHOW entry pt
  . W !,^TMP("SDAM",$J,+SDAT,0),!
  . S DFN=+$P(SDAT,U,2),SDT=+$P(SDAT,U,3),SDCL=+$P(SDAT,U,4)
  . S SDSTOP=$$NOSHOW(.RETURN,DFN,SDT,SDCL)
- . S SDSTB=RETURN("BEFORE") ; before status
- . S SDSTA=RETURN("AFTER") ; after status
- . I 'SDNSACT,'$$UPD(SDSTB,SDSTA,SDAT,$G(CNSTLNK)) S SDNSACT=2
+ . S SDSTB=$G(RETURN("BEFORE")) ; before status
+ . S SDSTA=$G(RETURN("AFTER")) ; after status
+ . I '$$UPD(SDSTB,SDSTA,SDAT,$G(CNSTLNK)) S SDNSACT=2
  ; values for SDNSACT :   0 = no re-build
  ;                        1 = re-build because of re-book
  ;                        2 = re-build because after not for list
- I SDNSACT,SDAMTYP="P" D BLD^SDAM1
- I SDNSACT,SDAMTYP="C" D BLD^SDAM3
+ I SDAMTYP="P" D BLD^SDAM1
+ I SDAMTYP="C" D BLD^SDAM3
 ENQ Q
  ;
 NOSHOW(ERR,DFN,SD,SC,LVL) ; No-show appointment
- S %=$$NOSHOW^SDMAPI2(.ERR,DFN,SC,SD,.LVL)
- I ERR=1 D PAUSE^VALM1  Q 'Y
- I $P(ERR(0),U,3)=1 W !!,$P(ERR(0),U,2),! Q 1
- I $P(ERR(0),U,3)>1 D
- . S OV=$$ALNS($P(ERR(0),U,2)) I OV=2 Q
- . I OV=1 D NOSHOW(.ERR,DFN,SD,SC,$P(ERR(0),U,3)-1)
+ N NERR
+ S %=$$NOSHOW^SDMAPI2(.NERR,DFN,SC,SD,.LVL)
+ S SDMSG=" DOES NOT HAVE A NO-SHOW LETTER ASSIGNED TO IT!"
+ S SDLT1="",SDYES="",SDDT=DT,I=SDT,SDT=$P(I,".")
+ I NERR=1 S SDYES=1 D 73^SDN,PAUSE^VALM1  Q 'Y
+ I $P(NERR(0),U,3)=1 W !!,$P(NERR(0),U,2),! Q 1
+ I $P(NERR(0),U,3)>1 D
+ . S OV=$$ALNS($P(NERR(0),U,2)) I OV=2 Q
+ . I OV=1 D NOSHOW(.ERR,DFN,SD,SC,$P(NERR(0),U,3)-1)
  Q 'Y
 ALNS(TXT) ;
 ALNS1 ;

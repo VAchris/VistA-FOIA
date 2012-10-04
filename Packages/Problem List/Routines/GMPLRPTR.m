@@ -1,19 +1,14 @@
-GMPLRPTR ; SLC/MKB/AJB -- Problem List Report of Removed Problems ; 03/29/12
+GMPLRPTR ; SLC/MKB/AJB -- Problem List Report of Removed Problems ; 09/17/12
  ;;2.0;Problem List;**28,260002**;Aug 25, 1994
 EN ; -- main entry point
+ N %
  S GMPDFN=$$PAT^GMPLX1 Q:+GMPDFN'>0
- D WAIT^DICD,GETLIST
+ D WAIT^DICD
+ K GMPLIST
+ S %=$$GETPLIST^GMPLAPI4(.GMPLIST,+GMPDFN,"R")
  I GMPLIST(0)'>0 W $C(7),!!?10,"No 'removed' problems found for this patient.",! Q
  D DISPLAY,REPLACE
  K GMPDFN,GMPLIST
- Q
- ;
-GETLIST ; -- build GMPLIST() of removed problems
- N IFN,CNT,NODE S CNT=0
- F IFN=0:0 S IFN=$O(^AUPNPROB("AC",+GMPDFN,IFN)) Q:IFN'>0  D
- . S NODE=$G(^AUPNPROB(IFN,1)) Q:$P(NODE,U,2)'="H"
- . S CNT=CNT+1,GMPLIST(CNT)=IFN W "."
- S GMPLIST(0)=CNT
  Q
  ;
 DISPLAY ; -- show list on screen
@@ -45,16 +40,16 @@ CONTINUE() ; -- end of page prompt
  Q +Y
  ;
 REPLACE ; -- replace problem on patient's list
- N GMPLSEL,GMPLNO,NUM,CHNGE,NOW,DA,DR,DIE W !!
+ N GMPLSEL,GMPLNO,NUM,DA,%,RET
+ W !!
  S GMPLSEL=$$SEL Q:GMPLSEL="^"  Q:'$$SURE
  W !!,"Replacing problem(s) on patient's list ..."
- S GMPLNO=$L(GMPLSEL,","),NOW=$$HTFM^XLFDT($H)
+ S GMPLNO=$L(GMPLSEL,",")
  F I=1:1:GMPLNO S NUM=$P(GMPLSEL,",",I) I NUM D
  . ; added for Code Set Versioning (CSV)
  . I '$$CODESTS^GMPLX(GMPLIST(NUM),DT) W !!,$$PROBTEXT^GMPLX(GMPLIST(NUM)),!,"has an inactive ICD9 code and will not be replaced." Q
- . S DA=GMPLIST(NUM),DR="1.02////P",DIE="^AUPNPROB(" D ^DIE
- . S CHNGE=DA_"^1.02^"_NOW_U_DUZ_"^H^P^Replaced^"_DUZ
- . D AUDIT^GMPLX(CHNGE,""),DTMOD^GMPLX(DA)
+ . S DA=GMPLIST(NUM)
+ . S %=$$UNDELETE^GMPLAPI4(.RET,DA)
  . W !,"  "_$$PROBTEXT^GMPLX(DA)
  D
  . N DIR S DIR(0)="E" W ! D ^DIR

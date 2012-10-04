@@ -1,11 +1,10 @@
-SDM1 ;SF/GFT - MAKE APPOINTMENT ; 07/25/2012  ; Compiled March 8, 2007 14:55:24  ; Compiled May 9, 2007 13:19:18  ; Compiled August 28, 2007 12:19:08
+SDM1 ;SF/GFT - MAKE APPOINTMENT ; 09/27/2012  ; Compiled March 8, 2007 14:55:24  ; Compiled May 9, 2007 13:19:18  ; Compiled August 28, 2007 12:19:08
  ;;5.3;Scheduling;**32,167,168,80,223,263,273,408,327,478,490,446,547,260003**;Aug 13, 1993;Build 17
 1 L  Q:$D(SDXXX)  S CCXN=0 K MXOK,COV,SDPROT Q:DFN<0  S SC=+SC
  S X1=DT S SDEDT=CLN("MAX # DAYS FOR FUTURE BOOKING")
  S:$L(SDEDT)'>0 SDEDT=365
  S X2=SDEDT D C^%DTC S SDEDT=X D WRT
  I $D(^SC(SC,"SI")),$O(^("SI",0))>0 W !,*7,?8,"**** SPECIAL INSTRUCTIONS ****",! S %I=0 F %=0:1 S %I=$O(^SC(SC,"SI",%I)) Q:%I'>0  W ^(%I,0) W:% ! I '%,$O(^SC(SC,"SI",%I))>0 S POP=0 D SPIN Q:POP
- I $D(SDINA),SDINA>DT D IN W !,?8,@SDMSG K SDMSG
  G:SDMM RDTY^SDMM
  ;
 ADT S:'$D(SDW) SDW=""
@@ -40,116 +39,61 @@ ADT S:'$D(SDW) SDW=""
  .W:$D(SD) " or a space to choose the same date/time as the patient you have just previously scheduled into this clinic"
  .W ".",!,"You may also select 'M' to display the next month's availability or"
  .W !,"'D' to specify an earlier or later date to begin the availability display."
- I X=" ",$D(SD),SD S Y=SD D AT^SDUTL W Y S Y=SD G OVR
+ I X=" ",$D(SD),SD S Y=SD D AT^SDUTL W Y S Y=SD
  I $E($P(X,"@",2),1,4)?1.4"0" K %DT S X=$P(X,"@"),X=$S($L(X):X,1:"T"),%DT="XF" D ^%DT G ADT:Y'>0 S X1=Y,X2=-1 D C^%DTC S X=X_.24
  K %DT S %DT="TXEF" D ^%DT
  I $P(Y,".",2)=24 S X1=$P(Y,"."),X2=1 D C^%DTC S Y=X_".000001"
- D MAKE(DFN,SC,Y,SDAPTYP,SDXSCAT,SL,$P(SDSRTY,U,2))
+ S SD=Y,SL=$P(CLN("LENGTH OF APP'T"),U)
+ D MAKE(DFN,SC,SD,SDAPTYP,SDXSCAT,SL)
  Q
 MAKE(DFN,SC,SD,TYP,STYP,SL,SRT,LVL) ; Make appointmemnt
- S %=$$MAKE^SDMAPI2(.ERR,DFN,SC,SD,TYP,STYP,SL,SRT,,.LVL)
+ N ERR
+ S %=$$CHKAPP^SDMAPI2(.ERR,SC,DFN,SD,SL,.LVL)
  I ERR=0 D
  . I $P(ERR(0),U,3)=1 W !!,$P(ERR(0),U,2),! G 1
  . I $P(ERR(0),U,3)>1 D
  . . S TXT1="...OK"
  . . S:$P(ERR(0),U)="APTPAHA" TXT1="DO YOU WANT TO CANCEL IT"
  . . S OV=$$OVB($P(ERR(0),U,2),TXT1) I OV=2 G 1
- . . I OV=1 D MAKE(DFN,SC,SD,TYP,STYP,SL,SRT,$P(ERR(0),U,3)-1)
+ . . I OV=1 D MAKE(DFN,SC,SD,TYP,STYP,SL,.SDSRTY,$P(ERR(0),U,3)-1)
+ Q:ERR=0
+ I $P(CLN("VARIABLE APP'NTMENT LENGTH"),U)="V" D LEN
+ I $D(SDSRTY(0)) S SDX=$$CONF^SDM1A(.SDSRTY,.SDSRFU,DFN,SD,SC) W !
+ D ORD
+ S %=$$MAKE^SDMAPI2(.ERR,DFN,SC,SD,TYP,STYP,.SL,$P(SDX,U,2),.OTHR,.CIO,.LAB,.XRAY,.EKG,.LVL)
+ D CHIO^SDAMEVT(SD,DFN,SC)
  Q
  ;
- ;SD*5.3*408  verify that day hasn't been canceled via "SET UP A CLINIC"
- I $G(^SC(+SC,"ST",$P(Y,"."),1))'="",^SC(+SC,"ST",$P(Y,"."),1)'["[" D  G ADT
- .W !,"There is no availability for this date/time.",!
- I $P(Y,".",2)=24 S X1=$P(Y,"."),X2=1 D C^%DTC S Y=X_".000001"
-OVR I $D(^HOLIDAY($P(Y,"."),0)),'SDSOH W *7,?50,$P(^(0),U,2),"??" K SDSDATE G ADT
- I $D(SDINA),$P(Y,".")'<SDINA,$S('$D(SDRE):1,SDRE>$P(Y,".")!('SDRE):1,1:0) D IN W !,*7,@SDMSG K SDMSG K SDSDATE G ADT
- I Y#1=0 K SDSDATE G 1
- I $P(Y,".")'<SDEDT W !,*7,"EXCEEDS MAXIMUM DAYS FOR FUTURE APPOINTMENT!!",*7 K SDSDATE G ADT
- ;
-EN1 S (TMPD,X,SD)=Y,SM=0 D DOW  ;SD/478
- F S=$P(SD,"."):0 S S=+$O(^DPT(DFN,"S",S)) Q:$P(S,".")-($P(SD,"."))  S I=+^(S,0) G ^SDM2:$P(^(0),U,2)'["C"
- ;
-PRECAN I $D(^DPT(DFN,"S",SD,0)),$P(^(0),U,2)["P" S %=1 W !,"THIS TIME WAS PREVIOUSLY CANCELLED BY THE PATIENT",!,"ARE YOU SURE THAT YOU WANT TO PROCEED" D YN^DICN W:'% !,"ANSWER WITH (Y)ES OR (N)O" I (%-1) K SDSDATE G ADT
- W !
- ;SD*5.3*490 - AVCHK/AVCHK1 to check against pat DOB and clinic avail dt
-S S POP=0 D AVCHK G:POP 1
- S POP=0 D AVCHK1 G:POP 1
- ;SD*5.3*547 if selected date is prior to the date the day of the week was added to clinic, do not set the date into availability pattern
- I '$D(^SC(SC,"ST",$P(SD,"."),1)) D
- .S XDT=X,POP=0
- .D DOWCHK^SDM0
- .K XDT
- .K:POP SDSDATE
- G:POP 1
- K POP
- I '$D(^SC(SC,"ST",$P(SD,"."),1)) S SS=+$O(^SC(+SC,"T"_Y,SD)) G XW:SS'>0,XW:^(SS,1)="" S ^SC(+SC,"ST",$P(SD,"."),1)=$E($P($T(DAY),U,Y+2),1,2)_" "_$E(SD,6,7)_$J("",SI+SI-6)_^(1),^(0)=$P(SD,".")
- ;
-LEN S SL=$P(CLN("LENGTH OF APP'T"),U) I $P(CLN("LENGTH OF APP'T"),U)]"" W !,"LENGTH OF APPOINTMENT (IN MINUTES): ",$P(CLN("LENGTH OF APP'T"),U),"// " R S:DTIME I S]"" G:$L(S)>3 LEN Q:U[S  S POP=0 D L G LEN:POP,S:S\5*5'=S,S:S>360,S:S<5 S SL=S
- ;
-SC S SDLOCK=$S('$D(SDLOCK):1,1:SDLOCK+1) G:SDLOCK>9 LOCK
- L +^SC(SC,"ST",$P(SD,"."),1):$S($G(DILOCKTM)>0:DILOCKTM,1:5) G:'$T SC  ;SD*53.*547 new required lock functionality
- S SDLOCK=0,S=^SC(SC,"ST",$P(SD,"."),1)
- S I=SD#1-SB*100,ST=I#1*SI\.6+($P(I,".")*SI),SS=SL*HSI/60*SDDIF+ST+ST
- G X:(I<1!'$F(S,"["))&(S'["CAN")
- I SM<7 S %=$F(S,"[",SS-1) S:'%!($P(CLN("DISPLAY INCREMENTS PER HOUR"),U)<3) %=999 I $F(S,"]",SS)'<%!(SDDIF=2&$E(S,ST+ST+1,SS-1)["[") S SM=7
- ;
-SP I ST+ST>$L(S),$L(S)<80 S S=S_" " G SP
- S SDNOT=1   ;SD*5.3*490 naked Do added below
- F I=ST+ST:SDDIF:SS-SDDIF S ST=$E(S,I+1) S:ST="" ST=" " S Y=$E(STR,$F(STR,ST)-2) G C:S["CAN"!(ST="X"&($D(^SC(+SC,"ST",$P(SD,"."),"CAN")))),X:Y="" S:Y'?1NL&(SM<6) SM=6 S ST=$E(S,I+2,999) D  S:ST="" ST=" " S S=$E(S,1,I)_Y_ST
- .Q:ST'=""
- .Q:+SL'>+^SC(SC,"SL")
- .S ST="   "
- .Q
- Q:SDMM  G OK^SDM1A:SM#9=0,^SDM3:$P(SL,U,7)]""&('$D(MXOK))
- ;
+LEN S SL=$P(CLN("LENGTH OF APP'T"),U) I $P(CLN("LENGTH OF APP'T"),U)]"" W !,"LENGTH OF APPOINTMENT (IN MINUTES): ",$P(CLN("LENGTH OF APP'T"),U),"// " R S:DTIME I S]"" G:$L(S)>3 LEN Q:U[S  S POP=0 D L G LEN:POP S SL=S Q
 OVB(TXT,TXT1) ;
 OVB1 ;
  S %=2 W *7,!,TXT,TXT1 D YN^DICN
  I '% W !,"RESPOND YES OR NO" G OVB1
  Q %
  ;
-LOCK Q:SDMM  W !,*7,"ANOTHER USER HAS LOCKED THIS DATE - TRY AGAIN LATER" Q
- ;
-6 ;;OVERBOOK!
-7 ;;THAT TIME IS NOT WITHIN SCHEDULED PERIOD!
-C S POP=1 W !,*7,"CAN'T BOOK WITHIN A CANCELLED TIME PERIOD!",!
- Q:SDMM  K SDSDATE G 1
- ;
-DAY ;;^SUN^MON^TUES^WEDNES^THURS^FRI^SATUR
- ;
-DOW S %=$E(X,1,3),Y=$E(X,4,5),Y=Y>2&'(%#4)+$E("144025036146",Y)
- F %=%:-1:281 S Y=%#4=1+1+Y
- S Y=$E(X,6,7)+Y#7 Q
- ;
-X I SDMM S POP=1 Q
- G:I<1 XW
- S:Y'?1NL&(SM<6) SM=6
- G OK^SDM1A:SM#9=0,^SDM3:$P(SL,U,7)]""&('$D(MXOK))
-XW W *7,"  WHEN??" K SDSDATE G 1
- ;
-AVCHK ;added SD*5.3*490
- I '$D(VADM) Q:'DFN  S VADM(3)=$P(^DPT(DFN,0),U,3)
- Q:$P(X,".",1)=$P(VADM(3),U,1)
- I $P(X,".",1)<$P(VADM(3),U,1) W *7,!!,"That date is prior to the patient's date of birth.",!! S POP=1 K SDSDATE Q
+ORD ;
+ S %=2 W !,"WANT PATIENT NOTIFIED OF LAB,X-RAY, OR EKG STOPS"
+ D YN^DICN I '% W !,"  Enter YES to notify patient on appt. letter of LAB, X-RAY, or EKG stops" G ORD
+ I '(%-1) D ORDY^SDM3
+OTHER ;
+ R !,"  OTHER INFO: ",D:DTIME
+ I D["^" W !,*7,"'^' not allowed - hit return if no 'OTHER INFO' is to be entered" G OTHER
+ S TMPD=D I $L(D)>150 D MSG^SDMM G OTHER ;SD/478
+ I D]"",D?."?"!(D'?.ANP) W "  ENTER LAB, SCAN, ETC." G OTHER
+ ;S $P(^(0),"^",4)=D
+ S OTHR=D
+ D:$D(TMP) LINK^SDCNSLT(SC,SDY,SD,CNSLTLNK) ;SD/478
+ D:$D(TMP) EDITCS^SDCNSLT(SD,TMPD,TMPYCLNC,CNSLTLNK) ;SD/478
+ K TMP  ;SD/478
+XR I $S('$D(^SC(SC,"RAD")):1,^("RAD")="Y":0,^("RAD")=1:0,1:1) S %=2 W !,"WANT PREVIOUS X-RAY RESULTS SENT TO CLINIC" D YN^DICN G:'% HXR I '(%-1) S ^SC("ARAD",SC,SD,DFN)=""
  Q
- ;
-AVCHK1 ;added SD*5.3*490
- S AVDT=0,AVDT=$O(^SC(+SC,"T",AVDT)) Q:'AVDT
- I $P(X,".",1)<AVDT W *7,!!,"That date is prior to the clinic's availability date.",!! S POP=1 K SDSDATE,AVDT Q
+HXR W !,"  Enter YES to have previous XRAY results sent to the clinic" G XR
  Q
- ;
-NOOB W !,"NO OPEN SLOTS THEN",*7 K SDSDATE G 1
- ;
 WRT W !,$P(CLN("LENGTH OF APP'T"),U)," MINUTE APPOINTMENTS "
  W $S($P(CLN("VARIABLE APP'NTMENT LENGTH"),U)["V":"(VARIABLE LENGTH)",1:"") Q
  ;
 L S SDSL=$S($G(CLN("DISPLAY INCREMENTS PER HOUR"))]"":60/$G(CLN("DISPLAY INCREMENTS PER HOUR")),1:"") Q:'SDSL
  I S\(SDSL)*(SDSL)'=S W *7,!,"Appt. length must = or be a multiple of the increment minutes per hour (",SDSL,")",! S POP=1
- Q
- ;
-IN S SDHY=$S($D(Y):Y,1:""),Y=SDINA D DTS^SDUTL S Y1=Y,Y=SDRE
- D:Y DTS^SDUTL
- S SDMSG="""*** Note: Clinic is scheduled to be inactivated on "","_""""_Y1_""""_$S(SDRE:",!,?10,"_""" and reactivated on "","_""""_Y_"""",1:""),Y=SDHY K Y1,SDHY
  Q
  ;
 SPIN W !,"There are more special instructions. Do you want to display them"

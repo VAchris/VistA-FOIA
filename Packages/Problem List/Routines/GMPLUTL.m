@@ -1,4 +1,4 @@
-GMPLUTL ; SLC/MKB/KER -- PL Utilities                      ; 05/21/12
+GMPLUTL ; SLC/MKB/KER -- PL Utilities                      ; 09/13/12
  ;;2.0;Problem List;**3,6,8,10,16,26,35,39,260002**;Aug 25, 1994
  ;
  ; External References
@@ -90,8 +90,8 @@ CREATE(PL,PLY) ; Creates a new problem
  K PLY S PLY=-1,PLY(0)=""
  S GMPVAMC=+$G(DUZ(2)),GMPVA=$S($G(DUZ("AG"))="V":1,1:0)
  I '$L($G(PL("NARRATIVE"))) S PLY(0)="Missing problem narrative" Q
- I '$D(^DPT(+$G(PL("PATIENT")),0)) S PLY(0)="Invalid patient" Q
- I '$D(^VA(200,+$G(PL("PROVIDER")),0)) S PLY(0)="Invalid provider" Q
+ I $$PATNAME^GMPLEXT(+$G(PL("PATIENT")))="" S PLY(0)="Invalid patient" Q
+ I $$ACTIVE^XUSER(+$G(PL("PROVIDER")))="" S PLY(0)="Invalid provider" Q
  S GMPDFN=+PL("PATIENT"),(GMPSC,GMPAGTOR,GMPION,GMPGULF,GMPHNC,GMPMST,GMPCV,GMPSHD)=0
  D:GMPVA VADPT^GMPLX1(GMPDFN)
  F GMPI="DIAGNOSI","LEXICON","DUPLICAT","LOCATION","STATUS" D @(GMPI_"^GMPLUTL1") Q:$D(GMPQUIT)
@@ -102,7 +102,7 @@ CR1 ; Ok to Create
  S GMPFLD(.01)=PL("DIAGNOSIS"),GMPFLD(1.01)=PL("LEXICON")
  S GMPFLD(.05)=U_$E(PL("NARRATIVE"),1,80)
  S (GMPROV,GMPFLD(1.04),GMPFLD(1.05))=+PL("PROVIDER")
- S GMPFLD(1.06)=$$SERVICE^GMPLX1(+PL("PROVIDER"))
+ S GMPFLD(1.06)=$$SERVICE^GMPLEXT(+PL("PROVIDER"))
  S GMPFLD(.13)=PL("ONSET"),GMPFLD(1.09)=PL("RECORDED")
  D GET^GMPLSITE(.GMPARAM)
  S GMPFLD(1.02)=$S('GMPARAM("VER"):"P",$G(GMPLUSER):"P",1:"T")

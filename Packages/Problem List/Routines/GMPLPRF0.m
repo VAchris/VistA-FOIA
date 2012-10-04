@@ -1,8 +1,8 @@
-GMPLPRF0 ; SLC/MKB -- Problem List User Prefs cont ;;9-5-95 11:54am
- ;;2.0;Problem List;**3**;Aug 25, 1994
+GMPLPRF0 ; SLC/MKB -- Problem List User Prefs cont ;09/13/12
+ ;;2.0;Problem List;**3,260002**;Aug 25, 1994
 CURRENT(USER) ; Show user's current preference
  N VIEW,NUM W !!,"CURRENT VIEW:  "
- S VIEW=$P($G(^VA(200,USER,125)),U),NUM=$S($L(VIEW,"/")<3:"all",1:$L(VIEW,"/")-2)
+ S VIEW=$$USERVIEW^GMPLEXT(USER),NUM=$S($L(VIEW,"/")<3:"all",1:$L(VIEW,"/")-2)
  I $E(VIEW)="S" W "Inpatient, "_NUM_" services included",! Q
  I $E(VIEW)="C" W "Outpatient, "_NUM_" clinics included",! Q
  W "None defined",!,"              (Default is outpatient, all clinics included)",!

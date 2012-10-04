@@ -1,8 +1,8 @@
-SCMCQK2 ;ALB/REW - Single Pt Tm/Pt Tm Pos Assign and Discharge ; 07 Oct 2002  12:10 PM
- ;;5.3;Scheduling;**297**;AUG 13, 1993
+SCMCQK2 ;ALB/REW - Single Pt Tm/Pt Tm Pos Assign and Discharge ; 08/31/2012
+ ;;5.3;Scheduling;**297,260003**;AUG 13, 1993
  ;
 DSPL ;
- N LP,SCD,SCPOS
+ N LP,SCD,SCPOS,PHONE
  S SCTOK=$$TMPT^SCAPMC3(DFN,"SCDT","","SCD","SCER1")
  S SCOK=$$TPPT^SCAPMC(DFN,"","","","","","","SCPOS","SCBKERR")
   ;
@@ -15,13 +15,15 @@ DSPL ;
  S CNT=0,POS=0
  F LP=0:0 S LP=$O(SCD(LP)) Q:'LP  S A=SCD(LP) I '$P(A,U,8) D
  .I 'CNT W !!,"NON PC ASSIGNMENTS",!
- .S CNT=CNT+1 W !,CNT,?4,"Non-PC Team: "_$P(A,U,2),?48,"Phone: "_$P($G(^SCTM(404.51,+A,0)),U,2) S DATA(CNT)=+A
+ . S %=$$GETEAM^SCTMAPI1(.TM,+A)
+ . S PHONE=$P(TM("TEAM PHONE NUMBER"),U,1)
+ .S CNT=CNT+1 W !,CNT,?4,"Non-PC Team: "_$P(A,U,2),?48,"Phone: "_PHONE S DATA(CNT)=+A
  .F I=0:0 S I=$O(SCPOS("T",+A,I)) Q:'I  D
  ..I $P(DATA(CNT),U,2) S CNT=CNT+1
  ..S B=SCPOS("T",+A,I)
  ..S DATA(CNT)=(+A)_U_(+B),POS=1
  ..S SCPR=$$GETPRTP^SCAPMCU2(+B,DT),RES=$$NEWPERSN^SCMCGU(+SCPR,"SCPR")
- ..W:$X>76 !,CNT,?4,"Non-PC Team: "_$P(A,U,2),?48,"Phone: "_$P($G(^SCTM(404.51,+A,0)),U,2)
+ ..W:$X>76 !,CNT,?4,"Non-PC Team: "_$P(A,U,2),?48,"Phone: "_PHONE
  ..W !,?7,"Provider: "_$P(SCPR,U,2),?45,"Position: "_$P(B,U,2)_"       "
  ..W !,?10,"Pager: "_$P($G(SCPR(+SCPR)),U,5),?48,"Phone: ",$P($G(SCPR(+SCPR)),U,2),?77," "
  I 'CNT W !,"No active NON PC ASSIGNMENTS for this patient",!
@@ -48,7 +50,7 @@ UNTP ;unassign patient from position
  G:'$$CONFIRM() QTUNTP
  S OK=$$INPTSCTP^SCAPMC22(DFN,SCTP,SCDISCH,.SCER)
  G:OK'>0 QTUNTP
- S SCCL=$P($G(^SCTM(404.57,+$G(SCTP),0)),U,9)
+ ;S SCCL=$P($G(^SCTM(404.57,+$G(SCTP),0)),U,9)
 QTUNTP W !,"Position Unassignment "_$S(OK:"made.",1:"NOT made.")
  Q
  ;
@@ -67,7 +69,7 @@ UNTM ;
  .S OK2=$$INPTSCTP^SCAPMC22(DFN,SCTP,SCDISCH,.SCER)
  .IF OK2>0 D
  ..W "made."
- ..S SCCL=$P(^SCTM(404.57,SCTP,0),U,9)
+ ..;S SCCL=$P(^SCTM(404.57,SCTP,0),U,9)
  S OK3=$$ALLPOS^SCMCQK1()
  IF $$OKINPTTM^SCMCTMU2(DFN,SCTM,SCDISCH) D
  .S OK=$$INPTSCTM^SCAPMC7(DFN,SCTM,SCDISCH,.SCER)
@@ -81,17 +83,16 @@ ASTM ;assign patient to team
  S OK=0
  W !!,"About to Assign "_$$NAME(DFN)_" to a non primary care team"
  I $$SC^SCMCQK1(DFN) W !!,"********** This patient is 50 percent or greater service-connected ************"
- S DIC="^SCTM(404.51,"
- S DIC(0)="AEMQZ"
- S DIC("S")="IF $$ACTTM^SCMCTMU(Y,DT) I $$NEW^SCMCQK2()"
- ;  - select from active teams that can not be PC Teams
- D ^DIC
+ S ROU="LSTATMS^SDMLST",PRMPT="Select TEAM NAME: "
+ S FILE="TEAM",FIELDS="TEAM NAME"
+ S Y=$$SELECT^SDMUTL(ROU,PRMPT,FILE,FIELDS)
  G:Y<1 QTASTM
  S SCTM=+Y
  S SCASSDT=$$DATE("A")
  G:SCASSDT<1 QTASTM
  S SCTMCT=$$TEAMCNT^SCAPMCU1(SCTM)
- S SCTMMAX=$P($$GETEAM^SCAPMCU3(SCTM),"^",8)
+ S %=$$GETEAM^SCTMAPI1(.TEAM,SCTM)
+ S SCTMMAX=$G(TEAM("MAX NUMBER OF PATIENTS"))
  I SCTMCT'<SCTMMAX  D  G QTASTM:'$$YESNO2()
  .W !,"This assignment will reach or exceeded the maximum set for this team."
  .W !,"Currently assigned: "_SCTMCT
@@ -115,19 +116,14 @@ ASTP ;assign patient to practitioner
  I $$SC^SCMCQK1(DFN) W !!,"********** This patient is 50 percent or greater service-connected ************"
  ;lookup to display only position and [practitioner]
  IF SCSELECT="PRACT" D
- .S DIC("W")="N SCP1 S SCP1=$G(^SCTM(404.52,Y,0)) W ""    ["",$P($G(^VA(200,+$P(SCP1,U,3),0)),U,1),""]"""
- .S DIC("A")="POSITION's Current PRACTITIONER: "
- .S DIC="^SCTM(404.52,"
- .;Must be from team, must be active,must not have future inactivation
- .S DIC("S")="I $$PRACSCR^SCMCQK2(Y)"
- .S D="C"
+ . S ROU="LSTAPRS^SDMLST",PRMPT="POSITION's Current PRACTITIONER: "
+ . S FILE="POSITION ASSIGNMENT HISTORY PRACTITIONER",FIELDS="POSITION ASSIGNMENT HISTORY PRACTITIONER"
+ . S FLDOR="USER^NAME^USER"
  ELSE  D
- .S DIC="^SCTM(404.57,"
- .S D="B"
- .S DIC("A")="POSITION's Name: "
- .S DIC("S")="I $$POSSCR^SCMCQK2(Y)"
- S DIC(0)="AEMQZ"
- D MIX^DIC1
+ . S ROU="LSTAPOS^SDMLST",PRMPT="POSITION's Name: "
+ . S FILE="TEAM POSITION",FIELDS="TEAM POSITION"
+ . S FLDOR="NAME^TEAM^USER^CLINIC"
+ S Y=$$SELECT^SDMUTL(ROU,PRMPT,FILE,FIELDS,FLDOR)
  G:Y<1 QTASTP
  IF SCSELECT="PRACT" D
  .S SCTP=$P(Y,U,2)
@@ -135,7 +131,9 @@ ASTP ;assign patient to practitioner
  .S SCTP=$P(Y,U,1)
  S SCASSDT=$$DATE("A")
  G:SCASSDT<1 QTASTP
- S SCTMCT=$$PCPOSCNT^SCAPMCU1(SCTP),SCTMMAX=+$P($G(^SCTM(404.57,SCTP,0)),U,8)
+ S SCTMCT=$$PCPOSCNT^SCAPMCU1(SCTP)
+ S %=$$GETEAMPO^SCTMAPI1(.TM,SCTP)
+ S SCTMMAX=+TM("MAX NUMBER OF PATIENTS")
  I SCTMCT'<SCTMMAX D  G QTASTP:'$$YESNO2
  .W !,"This assignment will reach or exceeded the maximum set for this position."
  .W !,"Currently assigned: "_SCTMCT
@@ -148,21 +146,21 @@ ASTP ;assign patient to practitioner
  D NOW^%DTC S SCTPFLDS(.07)=%
  IF $$ACPTTP^SCAPMC21(DFN,SCTP,"SCTPFLDS",SCASSDT,"SCTPTME",0) D
  .S OK=1
- .S SCCL=$P(^SCTM(404.57,SCTP,0),U,9)
+ .;S SCCL=$P(^SCTM(404.57,SCTP,0),U,9)
 QTASTP W !,"Position Assignment "_$S(OK:"made",1:"NOT made.")
  Q
 NAME(DFN) ;return patient name
- Q $P($G(^DPT(DFN,0)),U,1)
- ;
+ D 1^VADPT
+ Q $G(VADM(1))
 POSITION(SCTP) ;return position name
- Q $P($G(^SCTM(404.57,SCTP,0)),U,1)
- ;
+ N POS S %=$$GETEAMPO^SCTMAPI1(.POS,SCTP)
+ Q $P(POS("POSITION"),U,2)
 TEAMNM(SCTM) ;return team name
- Q $P($G(^SCTM(404.51,SCTM,0)),U,1)
- ;
+ N TEAM S %=$$GETEAM^SCTMAPI1(.TEAM,SCTM)
+ Q $P(TEAM("NAME"),U,2)
 CLINIC(SCCL) ;return clinic name
- Q $P($G(^SC(+SCCL,0)),U,1)
- ;
+ N CLN S %=$$GETCLN^SDMAPI1(.CLN,SCCL)
+ Q $P(CLN("NAME"),U,2)
 YESNO() ;
  N DIR,X,Y
  S DIR(0)="Y",DIR("B")="YES"
@@ -200,20 +198,3 @@ DATE(TYPE) ;return date type=A or D
  D ^DIR
  Q Y
  ;
-PRACSCR(SC40452) ;screen for for file 404.52
- N SCP,SCNODE,OK
- S SCP=$G(^SCTM(404.52,SC40452,0))
- S OK=0
- G:'SCP QTPP
- S SCNODE=$G(^SCTM(404.57,+SCP,0))
- S OK=$S($P(SCNODE,U,2)'=SCTM:0,$P(SCNODE,U,4):0,($O(^SCTM(404.52,"AIDT",+SCP,1,""))'=-$P(SCP,U,2)):0,($O(^SCTM(404.52,"AIDT",+SCP,0,-$P(SCP,U,2)),-1)):0,($$ACTTP^SCMCTPU(+SCP)>0):1,1:0)
-QTPP Q OK
- ;
-POSSCR(SCTP) ;screen for file 404.57
- N SCNODE
- S SCNODE=$G(^SCTM(404.57,SCTP,0))
- Q $S($P(SCNODE,U,2)'=SCTM:0,$P(SCNODE,U,4):0,($$ACTTP^SCMCTPU(SCTP)>0):1,1:0)
- Q
-NEW() ;
- F I=0:0 S I=$O(SCD(I)) Q:'I  I (+SCD(I))=(+Y) Q
- Q 'I

@@ -1,4 +1,4 @@
-SDM1A ;SF/GFT,ALB/TMP - MAKE APPOINTMENT ; 07/19/2012
+SDM1A ;SF/GFT,ALB/TMP - MAKE APPOINTMENT ; 09/19/2012
  ;;5.3;Scheduling;**26,94,155,206,168,223,241,263,327,478,446,544,260003**;Aug 13, 1993;Build 11
 OK I $D(SDMLT) D ^SDM4 Q:X="^"!(SDMADE=2)
  S ^SC(SC,"ST",$P(SD,"."),1)=S,^DPT(DFN,"S",SD,0)=SC,^SC(SC,"S",SD,0)=SD S:'$D(^DPT(DFN,"S",0)) ^(0)="^2.98P^^" S:'$D(^SC(SC,"S",0)) ^(0)="^44.001DA^^" L
@@ -90,8 +90,7 @@ OTHER R !,"  OTHER INFO: ",D:DTIME I D["^" W !,*7,"'^' not allowed - hit return 
  S TMPD=D I $L(D)>150 D MSG^SDMM G OTHER ;SD/478
  I D]"",D?."?"!(D'?.ANP) W "  ENTER LAB, SCAN, ETC." G OTHER
  I $L($G(^SC(SC,"S",SD,1,SDY,0)))+$L(D)+$L(DT)+$S($D(DUZ):$L(DUZ),1:0)>250 D MSG^SDMM G OTHER  ; sd/446
- ;S $P(^(0),"^",4)=D,$P(^(0),U,6,7)=$S($D(DUZ):DUZ,1:"")_U_DT ;NAKED REFERENCE - ^SC(IFN,"S",Date,1,SDY,0)
- S $P(^(0),"^",4)=D ;NAKED REFERENCE - ^SC(IFN,"S",Date,1,SDY,0) 544 moved DUZ&DT to tag S1.  
+ S $P(^(0),"^",4)=D
  D:$D(TMP) LINK^SDCNSLT(SC,SDY,SD,CNSLTLNK) ;SD/478
  D:$D(TMP) EDITCS^SDCNSLT(SD,TMPD,TMPYCLNC,CNSLTLNK) ;SD/478
  K TMP  ;SD/478
@@ -160,20 +159,13 @@ CONF(SDSRTY,SDSRFU,DFN,SDT,SC) ;Confirm scheduling request type
  ;Input: DFN=patient ien
  ;Input: SDT=appointment date/time
  ;Input: SC=clinic ifn
- N DIR,DIE,DA,DR,SDX,SDY,X,Y
+ N DIR,SDX,Y,TXT
  S DIR(0)="Y",DIR("B")="YES"
  S DIR("A")="THIS APPOINTMENT IS MARKED AS '"_SDSRTY(0)_"', IS THIS CORRECT"
  W ! D ^DIR Q:$D(DTOUT)!$D(DUOUT)
- I 'Y S SDX='SDSRTY,SDX(0)=$$TXRT(.SDX) W !!,"THIS APPOINTMENT HAS NOW BEEN MARKED AS '"_$S('SDSRTY:"",1:"NOT ")_"NEXT AVAILABLE'."
- ;S DIR("A")="THIS APPOINTMENT IS DEFINED AS '"_$S(SDSRFU:"FOLLOW-UP",1:"OTHER THAN FOLLOW-UP")_"', OK"
- ;W ! D ^DIR Q:$D(DTOUT)!$D(DUOUT)
- ;I 'Y S SDY='SDSRFU W "  (changed)"
- Q:'$D(SDX)  S DR=""
- I $D(SDX) S DR="25///^S X=$P(SDX,U,2);26///^S X=$$NAVA^SDMANA(SC,SDT,$P(SDX,U,2))"
- ;I $D(SDY) S:$L(DR) DR=DR_";" S DR=DR_"26///^S X=SDY"
- S DA=SDT,DA(1)=DFN
- S DIE="^DPT(DA(1),""S""," D ^DIE
- Q
+ S TXT="THIS APPOINTMENT HAS NOW BEEN MARKED AS '"_$S('SDSRTY:"",1:"NOT ")_"NEXT AVAILABLE'."
+ I 'Y S SDX='SDSRTY,SDX(0)=$$TXRT(.SDX) W !!,TXT Q SDX
+ Q SDSRTY
 TXRT(SDSRTY)    ;Transform request type
  ;Input: SDSRTY=variable to return request type (pass by reference)
  ;Output: external text for SDSRTY(0)

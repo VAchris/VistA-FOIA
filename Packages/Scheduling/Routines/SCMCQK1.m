@@ -1,5 +1,5 @@
-SCMCQK1 ;ALBOI/REW - Single Pt Tm/Pt Tm Pos Assign and Discharge;11/07/02
- ;;5.3;Scheduling;**148,177,231,264,436,297,446,524,535**;AUG 13, 1993;Build 3
+SCMCQK1 ;ALBOI/REW - Single Pt Tm/Pt Tm Pos Assign and Discharge;08/31/2012
+ ;;5.3;Scheduling;**148,177,231,264,436,297,446,524,535,260003**;AUG 13, 1993;Build 3
  ;
  ;04/25/2006 SD*5.3*446 INTER-FACILITY TRANSFER
 UNTP ;unassign patient from pc prac position
@@ -68,7 +68,7 @@ UNTM ;
  .S OK2=$$INPTSCTP^SCAPMC22(DFN,SCTP,SCDISCH,.SCER)
  .IF OK2>0 D
  ..W "made."
- ..S SCCL=$P(^SCTM(404.57,SCTP,0),U,9)
+ ..;S SCCL=$P(^SCTM(404.57,SCTP,0),U,9)
  ..;D:SCCL DISCL ;commented out in SD*5.3*535
  S OK3=$$ALLPOS()
  IF $$OKINPTTM^SCMCTMU2(DFN,SCTM,SCDISCH) D
@@ -107,19 +107,18 @@ ALLPOS() ;unassign all patient-positions for team
  .W:'OK !,?10,"Problem with unassignment, correct via PCMM GUI"
 QTALL Q OK
 ASTM ;assign patient to PC team
- N DIC,Y,OK,SCTM,SCTMFLDS,SCER,SCBEGIN,SCN,SCLIST,SCEND,SCINCL,SCLSEQ,SCDATES,SCDTS
+ N OK
  S OK=0
  W !!,"About to Assign "_$$NAME(DFN)_" to a primary care team"
  I $$SC(DFN) W !!,"********** This patient is 50 percent or greater service-connected ************"
- S DIC="^SCTM(404.51,"
- S DIC(0)="AEMQZ"
- S DIC("S")="IF $$ACTTM^SCMCTMU(Y,DT)&($P($G(^SCTM(404.51,Y,0)),U,5))"
- ;select from active teams that can be PC Teams
- D ^DIC
- G:Y<1 QTASTM
+ S ROU="LSTAPCTM^SDMLST",PRMPT="Select TEAM NAME: "
+ S FILE="TEAM",FIELDS="TEAM NAME"
+ S Y=$$SELECT^SDMUTL(ROU,PRMPT,FILE,FIELDS)
+ G:Y="^" QTASTM
  S SCTM=+Y
  ;The following logic to present warning message added per SD*5.3*436
- I $P($G(^SCTM(404.51,SCTM,0)),U,10) D  G:'SCFLAG QTASTM
+ S %=$$GETEAM^SCTMAPI1(.TEAM,SCTM)
+ I TEAM("CLOSE TO FURTHER ASSIGNMENT?") D  G:'SCFLAG QTASTM
  .S SCFLAG=0
  .W !!,"This team is closed to further patient assignments.  While you are"
  .W !,"not currently prevented from assigning this patient, you may want to"
@@ -130,7 +129,7 @@ ASTM ;assign patient to PC team
  S SCASSDT=$$DATE("A")
  G:SCASSDT<1 QTASTM
  S SCTMCT=$$TEAMCNT^SCAPMCU1(SCTM)
- S SCTMMAX=$P($$GETEAM^SCAPMCU3(SCTM),"^",8)
+ S SCTMMAX=$G(TEAM("MAX NUMBER OF PATIENTS"))
  I SCTMCT'<SCTMMAX  D  G QTASTM:$$WAITYN(),QTASTM:'$$YESNO2()
  .W !,"This assignment will reach or exceeded the maximum set for this team."
  .W !,"Currently assigned: "_SCTMCT
@@ -155,19 +154,14 @@ ASTP ;assign patient to PC practitioner
  I $$SC(DFN) W !!,"********** This patient is 50 percent or greater service-connected ************"
  ;lookup to display only position and [practitioner]
  IF SCSELECT="PRACT" D
- .S DIC("W")="N SCP1 S SCP1=$G(^SCTM(404.52,Y,0)) W ""    ["",$P($G(^VA(200,+$P(SCP1,U,3),0)),U,1),""]"""
- .S DIC("A")="POSITION's Current PRACTITIONER: "
- .S DIC="^SCTM(404.52,"
- .;Must be from team, must be activation,must not have future inactivation
- .S DIC("S")="I $$PRACSCR^SCMCQK1(Y)"
- .S D="C"
+ . S ROU="LSTAPRPO^SDMLST",PRMPT="POSITION's Current PRACTITIONER: "
+ . S FILE="POSITION ASSIGNMENT HISTORY PRACTITIONER",FIELDS="POSITION ASSIGNMENT HISTORY PRACTITIONER"
+ . S FLDOR="USER^NAME^USER"
  ELSE  D
- .S DIC="^SCTM(404.57,"
- .S D="B"
- .S DIC("A")="POSITION's Name: "
- .S DIC("S")="I $$POSSCR^SCMCQK1(Y)"
- S DIC(0)="AEMQZ"
- D MIX^DIC1
+ . S ROU="LSTAPOS^SDMLST",PRMPT="POSITION's Name: "
+ . S FILE="TEAM POSITION",FIELDS="TEAM POSITION"
+ . S FLDOR="NAME^TEAM^USER^CLINIC"
+ S Y=$$SELECT^SDMUTL(ROU,PRMPT,FILE,FIELDS,FLDOR)
  G:Y<1 QTASTP
  IF SCSELECT="PRACT" D
  .S SCTP=$P(Y,U,2)
@@ -175,7 +169,9 @@ ASTP ;assign patient to PC practitioner
  .S SCTP=$P(Y,U,1)
  S SCASSDT=$$DATE("A")
  G:SCASSDT<1 QTASTP
- S SCTMCT=$$PCPOSCNT^SCAPMCU1(SCTP),SCTMMAX=+$P($G(^SCTM(404.57,SCTP,0)),U,8)
+ S SCTMCT=$$PCPOSCNT^SCAPMCU1(SCTP)
+ S %=$$GETEAMPO^SCTMAPI1(.TM,SCTP)
+ S SCTMMAX=+TM("MAX NUMBER OF PATIENTS")
  I SCTMCT'<SCTMMAX D  G QTASTP:$$WAITYN,QTASTP:'$$YESNO2
  .W !,"This assignment will reach or exceeded the maximum set for this position."
  .W !,"Currently assigned: "_SCTMCT
@@ -188,19 +184,22 @@ ASTP ;assign patient to PC practitioner
  D NOW^%DTC S SCTPFLDS(.07)=%
  IF $$ACPTTP^SCAPMC21(DFN,SCTP,"SCTPFLDS",SCASSDT,"SCTPTME",0) D
  .S OK=1
- .S SCCL=$O(^SCTM(404.57,+$G(SCTP),5,0))
- .D:SCCL ENRCL
+ ;.D:SCCL ENRCL
 QTASTP W !,"Position Assignment "_$S(OK:"made",1:"NOT made.")
  S:$D(SDWLPCMM) SDWLPCMM=OK ;446
  Q
 NAME(DFN) ;return patient name
- Q $P($G(^DPT(DFN,0)),U,1)
+ D 1^VADPT
+ Q $G(VADM(1))
 POSITION(SCTP) ;return position name
- Q $P($G(^SCTM(404.57,SCTP,0)),U,1)
+ N POS S %=$$GETEAMPO^SCTMAPI1(.POS,SCTP)
+ Q $P(POS("POSITION"),U,2)
 TEAMNM(SCTM) ;return team name
- Q $P($G(^SCTM(404.51,SCTM,0)),U,1)
+ N TEAM S %=$$GETEAM^SCTMAPI1(.TEAM,SCTM)
+ Q $P(TEAM("NAME"),U,2)
 CLINIC(SCCL) ;return clinic name
- Q $P($G(^SC(+SCCL,0)),U,1)
+ N CLN S %=$$GETCLN^SDMAPI1(.CLN,SCCL)
+ Q $P(CLN("NAME"),U,2)
 YESNO() ;
  N DIR,X,Y
  S DIR(0)="Y",DIR("B")="YES"
@@ -245,19 +244,6 @@ ACTCL(DFN,SCCL) ;is patient enrolled in clinic? - not called with SD*5.3*535
  N SCXX
  S SCXX=$O(^DPT(DFN,"DE","B",SCCL,9999),-1)
  Q $S('SCXX:0,($P(^DPT(DFN,"DE",+SCXX,0),U,2)="I"):0,1:1)
-PRACSCR(SC40452) ;screen for for file 404.52
- N SCP,SCNODE,OK
- S SCP=$G(^SCTM(404.52,SC40452,0))
- S OK=0
- G:'SCP QTPP
- S SCNODE=$G(^SCTM(404.57,+SCP,0))
- S OK=$S($P(SCNODE,U,2)'=SCTM:0,'$P(SCNODE,U,4):0,($O(^SCTM(404.52,"AIDT",+SCP,1,""))'=-$P(SCP,U,2)):0,($O(^SCTM(404.52,"AIDT",+SCP,0,-$P(SCP,U,2)),-1)):0,($$ACTTP^SCMCTPU(+SCP)>0):1,1:0)
-QTPP Q OK
-POSSCR(SCTP) ;screen for file 404.57
- N SCNODE
- S SCNODE=$G(^SCTM(404.57,SCTP,0))
- Q $S($P(SCNODE,U,2)'=SCTM:0,'$P(SCNODE,U,4):0,($$ACTTP^SCMCTPU(SCTP)>0):1,1:0)
- Q
 WAITYN() ;
  N %,OK,Y
  I SCTMCT<SCTMMAX Q 0

@@ -1,10 +1,10 @@
-SDMUTL ;RGI/CBR - UI UTILS; 08/10/2012
+SDMUTL ;RGI/CBR - UI UTILS; 10/01/2012
  ;;5.3;scheduling;**260003**;08/13/93;
 SELECT(ROUTINE,PRMPT,FILE,FLDS,FLDOR,HLP1,HLP2,ROU1) ;
  N LNAME,Y,RETURN,R1,R2,R3,EXS,L
  S R1=ROUTINE_"(.LSTS)"
  S:$D(ROU1) R3=ROU1_"(.EXS)"
- S L="L",R2=ROUTINE_"(.LSTS,X)"
+ S L="L",R2=ROUTINE_"(.LSTS,.X)"
 LS ;
  S Y=-1
  W !,PRMPT R X:$S($D(DTIME):DTIME,1:300) I "^"[X!($G(X)="") S Y=-1 Q "^"
@@ -13,7 +13,7 @@ LS ;
  . I $$LSTSH1(.LSTS,FILE,.FIELDS)  D
  . . I $L($G(R3))>0 D @R3 D PRINTALL(.EXS,0)
  . . D:$L(L)>0&($G(HLP1(0))'="") @HLP1(0)
- . . D PRINTALL(.LSTS,1,.FLDOR) 
+ . . D PRINTALL(.LSTS,1,.FLDOR)
  . D:$L(L)>0&($G(HLP1)'="") @HLP1
  I X?1"??".E D
  . I X="??"  D
@@ -22,7 +22,7 @@ LS ;
  . . D @R1 D PRINTALL(.LSTS,1,.FLDOR) D:$L(L)>0&($G(HLP2)'="") @HLP2
  E  D:X'="?"
  . D @R2
- . S Y=$$SELLST(.LSTS,X,.FLDOR)
+ . S Y=$$SELLST(.LSTS,.X,.FLDOR)
  G:Y<0 LS I Y=0,$L(L)'>0 W " ??",! G LS
  I Y=0 D
  . I $L(X)>30!(X?.N)!($L(X)<3)!'(X'?1P.E) W " ??",! G LS
@@ -78,7 +78,7 @@ CONTINUE() ; -- end of page prompt
 LSTSH1(LSTS,FILE,FIELDS) ; All items ??
  N DIR,X,Y,CNT
  S CNT=$P(LSTS(0),U,1) Q:CNT=0 1
- W !," Answer with "_FILE_" "_FIELDS
+ W !," Answer with "_FILE_" "_$G(FIELDS)
  Q:CNT<(IOSL-4) 1
  S:CNT>(IOSL-4) DIR("A")=" Do you want the entire "_CNT_"-Entry "_FILE_" List"
  S DIR(0)="YO"
@@ -136,4 +136,36 @@ ASK() ;
  Q %
  ;
 ERR S Y=-1
-CQUIT K DIC,J,VAERR,VAI,VAJ,VAJ1,VAX,VAUTNALL,VAUTNI,NAME,VAUTVB,X Q
+CQUIT K DIC,J,VAERR,VAI,VAJ,VAJ1,VAX,VAUTNALL,VAUTNI,NAME,VAUTVB,X 
+ Q
+FLDNAME(FLDS,NAMES,FLD)    ; Returns field name for display
+ N NAME,I,J S J=0,NAME=""
+ F I=1:1:$L(FLDS,U) I +$P(FLDS,U,I)=+FLD S J=I Q
+ G:J'>0 FNQ
+ S NAME=$P(NAMES,U,J)
+FNQ Q NAME
+ ;
+READ(TYPE,PROMPT,DEFAULT,HELP) ; Calls reader, returns response
+ N DIR,DA,X,Y
+ S DIR(0)=TYPE,DIR("A")=PROMPT I $D(DEFAULT) S DIR("B")=DEFAULT
+ I $D(HELP) S DIR("?")=HELP
+ D ^DIR
+ Q Y
+ ;
+SELPAT(PRMT) ; Select patient
+ N ROU,PRMPT,FILE,FLDOR,Y
+ S ROU="LSTPATS^SDMLST",PRMPT="Select "_$S($D(PRMT):PRMT,1:"PATIENT NAME")_": "
+ S FILE="PATIENT"
+ S FIELDS=" NAME, or SOCIAL SECURITY NUMBER, or last 4 digits"_$C(10,13)
+ S FIELDS=FIELDS_"   of SOCIAL SECURITY NUMBER, or first initial of last name with last"_$C(10,13)
+ S FIELDS=FIELDS_"   4 digits of SOCIAL SECURITY NUMBER"
+ S FLDOR="NAME^BIRTHDATE^SSN^VETERAN^TYPE"
+ S Y=$$SELECT^SDMUTL(ROU,PRMPT,FILE,FIELDS,FLDOR)
+ Q $S(Y="^":-1,1:Y)
+ ;
+SELCLN(PRMT) ; Select clinic
+ S ROU="LSTCLNS^SDMLST",PRMPT="Select "_$S($D(PRMT):PRMT,1:"CLINIC")_": "
+ S FILE="HOSPITAL LOCATION",FIELDS="NAME, or ABBREVIATION, or TEAM"
+ S Y=$$SELECT^SDMUTL(ROU,PRMPT,FILE,FIELDS)
+ Q $S(Y="^":-1,1:Y)
+ ;

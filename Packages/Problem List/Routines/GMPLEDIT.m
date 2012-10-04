@@ -1,4 +1,4 @@
-GMPLEDIT ; SLC/MKB/KER -- VALM Utilities for Edit sub-list ; 03/19/12
+GMPLEDIT ; SLC/MKB/KER -- VALM Utilities for Edit sub-list ;09/13/12
  ;;2.0;Problem List;**26,35,260002**;Aug 25, 1994
  ;
  ; External References
@@ -24,7 +24,7 @@ EN ; Init Variables, list array
  M GMPFLD=GMPORIG
 INIT ;   Build list from GMPFLD()
  N LCNT,TEXT,I,SP,LINE,STR,NUM,NOTE,ICD
- S LCNT=1,ICD=$S($$HASKEY^GMPLEXT("GMPL ICD CODE"):1,1:0)
+ S LCNT=1,ICD=$$KCHK^XUSRB("GMPL ICD CODE")
  S SP="" F I=1.11,1.12,1.13,1.15,1.16,1.17,1.18 S:GMPFLD(I) SP=SP_$P(GMPFLD(I),U,2)_U
  S:$L(SP) SP=$E(SP,1,$L(SP)-1)
  K GMPSAVED,GMPREBLD D CLEAN^VALM10
@@ -69,7 +69,7 @@ IN4 ;   Line 7/8
  . I $P(GMPFLD(10,I),U,3)="",$P(GMPORIG(10,I),U,3)'="" S $P(NOTE,U,3)="<Deleted>"
  . S LCNT=LCNT+1,^TMP("GMPLEDIT",$J,LCNT,0)=LINE_": "_$P(NOTE,U,3)
  . D HI(LCNT,1) Q:'$D(GMPLMGR)
- . S LINE="             "_$P($G(^VA(200,+$P(NOTE,U,6),0)),U)
+ . S LINE="             "_$$PROVNAME^GMPLEXT(+$P(NOTE,U,6))
  . S LCNT=LCNT+1,^TMP("GMPLEDIT",$J,LCNT,0)=LINE
 IN5 ;   Last Line
  I $D(GMPFLD(10,"NEW"))>9 S NUM=NUM+1 D

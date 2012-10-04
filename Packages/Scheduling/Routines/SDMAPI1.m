@@ -1,8 +1,7 @@
-SDMAPI1 ;RGI/CBR - APPOINTMENT API; 08/10/2012
+SDMAPI1 ;RGI/CBR - APPOINTMENT API; 10/02/2012
  ;;5.3;scheduling;**260003**;08/13/93
 CLNCK(RETURN,CLN) ;Check clinic for valid stop code restriction.
  ;  INPUT:   CLN   = IEN of Clinic
- ;           DSP   = Error Message Display, 1 - Display or 0 No Display
  ;
  ;  OUTPUT:  1 if no error or 0^error message
  N PSC,SSC,ND0,VAL,FLDS
@@ -45,14 +44,19 @@ SCREST(RETURN,SCIEN,TYP) ;check stop code restriction in file 40.7 for a clinic.
  ;
 GETCLN(RETURN,CLN) ; Get Clinic data
  ;  INPUT:   CLN = IEN of Clinic
- D GETCLN^SDMDAL1(.RETURN,CLN,1,1,1)
+ N DATA
+ S RETURN=0
+ D GETCLN^SDMDAL1(.DATA,CLN,1,1,1)
+ I '$D(DATA) D ERRX^SDAPIE(.RETURN,"CLNNFND") Q 0
+ M RETURN=DATA
+ S RETURN=1
  Q 1
  ;
 LSTCLNS(RETURN,SEARCH,START,NUMBER) ; Return clinics filtered by name.
  N LST
  D LSTCLNS^SDMDAL1(.LST,$G(SEARCH),.START,$G(NUMBER))
  D BLDLST^SDMAPI(.RETURN,.LST)
- Q RETURN
+ Q 1
  ;
 CLNRGHT(RETURN,CLN) ; Verifies (DUZ) user access to Clinic
  N DATA,TXT
@@ -79,7 +83,17 @@ CLNVSC(RETURN,SC) ; Verifies clinic stop code validation
  Q RETURN
  ;
 GETSCAP(RETURN,SC,DFN,SD) ; Get clinic appointment
+ N NOD0,CO
  D GETSCAP^SDMDAL1(.RETURN,SC,DFN,SD)
+ I $D(RETURN) D
+ . S NOD0=RETURN(0),CO=$G(RETURN("C"))
+ . S RETURN("IFN")=RETURN
+ . S RETURN("USER")=$P(NOD0,U,6)
+ . S RETURN("DATE")=$P(NOD0,U,7)
+ . S RETURN("CHECKOUT")=$P(CO,U,3)
+ . S RETURN("CHECKIN")=$P(CO,U,1)
+ . S RETURN("LENGTH")=$P(NOD0,U,2)
+ . S RETURN("CONSULT")=$P($G(RETURN("CONS")),U)
  Q 1
  ;
 SLOTS(RETURN,SC) ; Get available slots
@@ -111,20 +125,22 @@ LSTAPPT(RETURN,SEARCH,START,NUMBER) ; Lists appointment types
  ;
 GETAPPT(RETURN,TYPE) ; Returns Appointment Type detail
  D GETAPPT^SDMDAL2(.RETURN,TYPE,1,1,1)
+ S RETURN=1
  Q 1
  ;
 GETELIG(RETURN,ELIG) ; Returns Eligibility Code detail 
  D GETELIG^SDMDAL2(.RETURN,ELIG,1,1,1)
+ S RETURN=1
  Q 1
  ;
-HASPEND(RETURN,PAT,DT) ; Check if patient has panding appointments
- D HASPEND^SDMDAL2(.RETURN,PAT,DT)
+HASPEND(RETURN,DFN,DT) ; Check if patient has panding appointments
+ D HASPEND^SDMDAL2(.RETURN,DFN,DT)
  Q 1
  ;
-GETPEND(RETURN,PAT,DT) ; Get pending appointments
+GETPEND(RETURN,DFN,DT) ; Get pending appointments
  N CNT,SCAP,APP,CLN
  S CNT=""
- D GETPEND^SDMDAL2(.APP,PAT,DT)
+ D GETPEND^SDMDAL2(.APP,DFN,DT)
  F  S CNT=$O(APP(CNT)) Q:CNT=""  D
  . S RETURN(CNT,"COLLATERAL VISIT")=APP(CNT,13)
  . S RETURN(CNT,"APPOINTMENT TYPE")=$$APTYNAME^SDMDAL2(APP(CNT,9.5))
@@ -133,13 +149,15 @@ GETPEND(RETURN,PAT,DT) ; Get pending appointments
  . S RETURN(CNT,"EKG DATE/TIME")=APP(CNT,4)
  . D GETCLN^SDMAPI1(.CLN,APP(CNT,.01))
  . S RETURN(CNT,"CLINIC")=$P(CLN("NAME"),U,2)
- . D GETSCAP^SDMDAL1(.SCAP,APP(CNT,.01),PAT,CNT)
- . S RETURN(CNT,"LENGTH OF APP'T")=$G(SCAP(CNT,1))
- . S RETURN(CNT,"CONSULT LINK")=$G(SCAP(CNT,688))
+ . D GETSCAP^SDMAPI1(.SCAP,APP(CNT,.01),DFN,CNT)
+ . S RETURN(CNT,"LENGTH OF APP'T")=$G(SCAP("LENGTH"))
+ . S RETURN(CNT,"CONSULT LINK")=$G(SCAP("CONSULT"))
+ S RETURN=($D(RETURN)>0)
  Q 1
  ;
 GETAPTS(RETURN,DFN,SD) ; Get patient appointments
  D GETAPTS^SDMDAL2(.RETURN,DFN,.SD)
+ S RETURN=($D(RETURN)>0)
  Q 1
  ;
 LSTCRSNS(RETURN,SEARCH,START,NUMBER) ; Return cancelation reasons.
@@ -158,7 +176,7 @@ LSTCAPTS(RETURN,SC,SDBEG,SDEND,STAT) ; Returns clinic appointments filtered by d
  S CNT=0,IND=0
  S RETURN=0
  D GROUP^SDAM($P(STAT,U),.GROUPS)
- D LSTCAPTS^SDMDAL1(.APTS,SC,SDBEG,SDEND)
+ D LSTCAPTS^SDMDAL1(.APTS,SC,.SDBEG,.SDEND)
  D BLDAPTS(.RETURN,.APTS,SC)
  S RETURN=1
  Q 1
@@ -194,6 +212,9 @@ BLDAPTS(RETURN,APTS,SSC,SDFN) ; Build appointment list
  . S RETURN(CNT,"SD")=SD
  . S RETURN(CNT,"STAT")=SDSTAT
  . S RETURN(CNT,"DFN")=DFN
+ . S RETURN(CNT,"LAB")=$P(SDATA,U,3)
+ . S RETURN(CNT,"XRAY")=$P(SDATA,U,4)
+ . S RETURN(CNT,"EKG")=$P(SDATA,U,5)
  . S RETURN(CNT,"SC")=SC
  . S RETURN(CNT,"SDDA")=APTS(IND,"SDDA")
  . S:$G(APTS(IND,"CONS"))>0 RETURN(CNT,"CSTAT")=$$CNSSTAT^SDMEXT(APTS(IND,"CONS"))
@@ -205,4 +226,43 @@ GAFREQ(DFN,SC,CVSIT) ;
  I $$MHCLIN^SDUTL2(SC),'($$COLLAT^SDUTL2(SDELIG)!$G(CVSIT)) D  Q SDGAFST
  . S SDGAF=$$NEWGAF^SDUTL2(DFN),SDGAFST=$P(SDGAF,"^") Q
  Q 0
+ ;
+GETCSC(RETURN,SC) ; Get clinic stop code
+ D GETCSC^SDMDAL1(.RETURN,SC)
+ Q 1
+ ;
+CPAIR(RETURN,SC) ;Validate primary stop code, get credit pair
+ ;Input: SC=HOSPITAL LOCATION record IFN
+ ;Input: RETURN=variable to return clinic credit pair (pass by reference)
+ ;Output: 1=success, 0=invalid primary stop code
+ N SDSSC
+ D GETCLN^SDMDAL1(.CLN,SC,1)
+ D GETCSC^SDMDAL1(.CS,CLN(8))
+ S RETURN=$G(CS(1)),RETURN=$S(RETURN<100:0,RETURN>999:0,1:RETURN)
+ Q:RETURN'>0 0
+ K CS D GETCSC^SDMDAL1(.CS,CLN(2503))
+ S SDSSC=$G(CS(1)),RETURN=RETURN_$S(SDSSC<100:"000",SDSSC>999:"000",1:SDSSC)
+ Q 1
+ ;
+PTFU(RETURN,DFN,SC)    ;Determine if this is a follow-up (return to clinic within 24 months)
+ ;Input: DFN=patient ifn
+ ;Input: SC=clinic ifn
+ ;Output: '1' if seen within 24 months, '0' otherwise
+ ;
+ Q:'DFN!'SC 0  ;variable check
+ N SDBDT,SDT,SDX,SDY,SDZ,SDCP,SDCP1,SC0,SDENC,SDCT,LST,ENC,FLDS
+ ;set up variables
+ S SDBDT=(DT-20000)+.24,SDT=DT_.999999,SDY=0
+ S SDX=$$CPAIR(.SDCP,SC)  ;get credit pair for this clinic
+ ;Iterate through encounters
+ D LSTAENC^SDMDAL1(.LST,DFN)
+ S FLDS(.04)="CLINIC",FLDS(.06)="PARENT"
+ D BLDLST^SDMAPI(.ENC,.LST,.FLDS)
+ F  S SDT=$O(ENC(SDT),-1) Q:'SDT!SDY  D
+ . Q:ENC(SDT,"PARENT")]""  ;parent encounters only
+ . Q:ENC(SDT,"NAME")<SDBDT
+ . S SDX=$$CPAIR(.SDCP1,ENC(SDT,"CLINIC"))  ;get credit pair for encounter
+ . S SDY=SDCP=SDCP1  ;compare credit pairs
+ . Q
+ Q SDY
  ;

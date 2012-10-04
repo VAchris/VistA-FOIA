@@ -1,4 +1,4 @@
-GMPLMGR ; SLC/MKB/AJB -- Problem List VALM Utilities ; 03/20/12
+GMPLMGR ; SLC/MKB/AJB -- Problem List VALM Utilities ; 09/13/12
  ;;2.0;Problem List;**21,28,260002**;Aug 25, 1994
  ; 28 Feb 00 - MA added view comments accross Divisions
 INIT ; -- init variables, list array
@@ -9,7 +9,7 @@ INIT ; -- init variables, list array
 IN1 S GMPVA=$S($G(DUZ("AG"))="V":1,1:0),GMPVAMC=+$G(DUZ(2))
  S (GMPSC,GMPAGTOR,GMPION,GMPGULF)=0 D:GMPVA VADPT^GMPLX1(+GMPDFN) ;reset
  S GMPLVIEW("ACT")="A",GMPLVIEW("PROV")=0
- S GMPLVIEW("VIEW")=$$VIEW^GMPLX1(DUZ)
+ S GMPLVIEW("VIEW")=$$USERVIEW^GMPLEXT(DUZ)
  K GMPARAM
  D GET^GMPLSITE(.GMPARAM)
  S %=$$GETPLIST^GMPLAPI4(.GMPLIST,GMPDFN,GMPLVIEW("ACT"),GMPARAM("REV"),GMPLVIEW("PROV"),GMPLVIEW("VIEW"),1)

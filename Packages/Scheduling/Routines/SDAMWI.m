@@ -1,4 +1,4 @@
-SDAMWI ;ALB/MJK - Unscheduled Appointments ; 7/25/2012
+SDAMWI ;ALB/MJK - Unscheduled Appointments ; 9/24/2012
  ;;5.3;Scheduling;**63,94,241,250,296,380,327,260003**;Aug 13, 1993
  ;
 EN(DFN,SC) ; -- main entry point
@@ -33,39 +33,17 @@ ASK R !!,"APPOINTMENT TIME: NOW// ",X:DTIME S X=$$UPPER^VALM1(X)
  S:X=""!(X="N")!(X="NO") X="NOW"
  I X'="NOW",X'["@" S X="T@"_X
  S %DT="TEP",%DT(0)=-(DT+1) D ^%DT G ASK:Y<0 S SDT=Y
- G:'$$CANCHK(.SC,.SDT) ASK
- I $D(^DPT(DFN,"S",SDT,0)) W !?5,*7,"o  Patient already has an appt on ",$$FTIME^VALM1(SDT) G ASK
+ S %=$$CHKAPTU^SDMAPI2(.RETURN,SC,DFN,SDT)
+ I RETURN=0 W !!?5,*7,$P(RETURN(0),U,2) D PAUSE^VALM1 G ASK
  S SDY=1
 TIMEQ Q SDY
- ;
-CANCHK(SC,SDT) ; -- is clinic cancelled for date
- ;    input: SC := clinic# ; SDT := date/time of wi appt
- ; returned: success or fail := 1/0
- ;
- N SDY
- S SDY=1
- I $D(^SC(SC,"ST",$P(SDT,"."))),'$D(^SC(SC,"ST",$P(SDT,"."),"CAN")) G CANCHKQ
- I $D(^SC(SC,"ST",$P(SDT,"."),"CAN")),$G(^SC(SC,"ST",$P(SDT,"."),1))["CANCEL" W !?5,*7,"o  This date's clinic has been cancelled!" S SDY=0 G CANCHKQ
- I $D(^SC(SC,"ST",$P(SDT,"."),"CAN")),$G(^SC(SC,"ST",$P(SDT,"."),1))'["CANCEL" W !?5,*7,"o  Warning: Part of this day's clinic has been cancelled!" G CANCHKQ
- S SDY=$$AVAIL(.SC,.SDT)
-CANCHKQ Q SDY
- ;
-AVAIL(SC,SDT) ; -- does clinic meet
- ;    input: SC := clinic# ; SDT := date/time of wi appt
- ; returned: success or fail := 1/0
- ;
- N SDY
- S X=$P(SDT,".") D DOW^SDM0
- I $D(^SC(SC,"T"_Y)) S Z=$O(^SC(SC,"T"_Y,DT)) I Z'="",$D(^SC(SC,"T"_Y,Z,1)),^(1)]"" S SDY=1 G AVAILQ
- W !?5,*7,"o  Clinic does not meet on this date!" S SDY=0
-AVAILQ Q SDY
  ;
 CL(DFN) ; -- make wi appt
  ;    input: DFN
  ; returned: success or fail := 1/0
  ;
- S DIC="^SC(",DIC(0)="AEMQ",DIC("A")="Select Clinic: ",DIC("S")="I $P(^(0),U,3)=""C"",'$G(^(""OOS""))"
- D ^DIC K DIC
+ N Y
+ S Y=$$SELCLN^SDMUTL("Clinic")
  I Y<0 S SDY=0 G CLQ
  S SC=+Y S SDY=$$EN(.DFN,.SC)
 CLQ Q SDY
@@ -74,8 +52,8 @@ PT(SC) ;
  ;    input:  SC := clinic#
  ; returned: success or fail := 1/0
  ;
- S DIC="^DPT(",DIC(0)="AEMQ",DIC("A")="Select Patient: "
- D ^DIC K DIC
+ N Y
+ S Y=$$SELPAT^SDMUTL("Patient")
  I Y<0 S SDY=0 G PTQ
  S DFN=+Y S SDY=$$EN(.DFN,.SC)
 PTQ Q SDY

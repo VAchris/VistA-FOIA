@@ -1,4 +1,4 @@
-GMPLMGR2 ; SLC/MKB/KER/AJB -- Problem List VALM Utilities cont ; 03/20/12
+GMPLMGR2 ; SLC/MKB/KER/AJB -- Problem List VALM Utilities cont ; 09/14/12
  ;;2.0;Problem List;**26,28,260002**;Aug 25, 1994
  ;
  ; External References
@@ -81,15 +81,15 @@ SHOW ; Show Current View of List
  W !!,"CURRENT VIEW: "_$S(VIEW="S":"Inpatient, ",1:"Outpatient, ")
  I '((NUM>2)!($L(GMPLVIEW("ACT")))!(GMPLVIEW("PROV"))) W "all problems" Q
  W $S(GMPLVIEW("ACT")="A":"active",GMPLVIEW("ACT")="I":"inactive",1:"all")_" problems"
- I NUM>2 W " from "_$S(GMPLVIEW("VIEW")=$$VIEW^GMPLX1(DUZ):"preferred",1:"selected")_$S(VIEW="S":" services",1:" clinics")
+ I NUM>2 W " from "_$S(GMPLVIEW("VIEW")=$$USERVIEW^GMPLEXT(DUZ):"preferred",1:"selected")_$S(VIEW="S":" services",1:" clinics")
  I GMPLVIEW("PROV") S NAME=$$NAME^GMPLX1(GMPLVIEW("PROV")) W:($X+$L(NAME)+4>80) ! W " by "_NAME
  Q
  ;
 ENVIEW ; Entry Action to Display Appropriate View Menu
  N XQORM,X,Y,GMPLX S GMPLX=0 D SHOW S X="GMPL VIEW "_$S($E(GMPLVIEW("VIEW"))="S":"INPAT",1:"OUTPAT")
- S XQORM=+$O(^ORD(101,"B",X,0))_";ORD(101,",XQORM(0)="3AD"
+ S XQORM=+$$PROTKEY^GMPLEXT(X)_";ORD(101,",XQORM(0)="3AD"
  W !,"You may change your view of this patient's problem list by selecting one or",!,"more of the following attributes to alter:",!
- D EN^XQORM F  S GMPLX=$O(Y(GMPLX)) Q:GMPLX'>0  X:$D(^ORD(101,+$P(Y(GMPLX),U,2),20)) ^(20)
+ D EN^XQORM F  S GMPLX=$O(Y(GMPLX)) Q:GMPLX'>0  X:$$ENACT^GMPLEXT(+$P(Y(GMPLX),U,2))'="" $$ENACT^GMPLEXT(+$P(Y(GMPLX),U,2))
  Q
  ;
 EXVIEW ; Exit Action to Rebuild List w/New View

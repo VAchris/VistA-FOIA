@@ -1,5 +1,5 @@
-GMPLHSPL ; SLC/MKB -- Problem List HS Component Driver (for export) ;11/23/93  10:36
- ;;2.0;Problem List;;Aug 25, 1994
+GMPLHSPL ; SLC/MKB -- Problem List HS Component Driver (for export) ;09/20/12
+ ;;2.0;Problem List;**260002**;Aug 25, 1994
 GMTSPLST ; SLC/DJP -- Problem List HS Component Driver ;5/27/93  15:35
  ;;2.5;Health Summary;;
 ACTIVE ;
@@ -15,7 +15,7 @@ MAIN ;Driver
  D WRT
  Q
  ;
-KILL D KILL^GMPLHS
+KILL ;D KILL^GMPLHS
  Q
  ;
 NOPROBS ;Indicates problems not on file for patient

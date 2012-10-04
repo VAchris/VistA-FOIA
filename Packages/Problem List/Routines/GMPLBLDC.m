@@ -1,4 +1,4 @@
-GMPLBLDC ; SLC/MKB -- Build Problem Selection Categories ; 04/12/12
+GMPLBLDC ; SLC/MKB -- Build Problem Selection Categories ;09/14/12
  ;;2.0;Problem List;**3,7,28,260002**;Aug 25, 1994
  ;
  ; This routine invokes IA #3991
@@ -109,7 +109,7 @@ EDIT ; Edit problem text and code
  . S IFN=$P($G(^TMP("GMPLST",$J,"B",NUM)),U,1) Q:IFN'>0
  . I "@"[$G(^TMP("GMPLIST",$J,IFN)) W $C(7),!!,"Problem #"_NUM_" does not exist in this category!" H 2 Q
  . W !!,">>>  Problem #"_NUM S PROBLEM=^TMP("GMPLIST",$J,IFN)
- . W:$P(PROBLEM,U,2)>1 " = "_$G(^LEX(757.01,+$P(PROBLEM,U,2),0)) W ! ; KER
+ . W:$P(PROBLEM,U,2)>1 " = "_$$CONTEXT^GMPLEXT(+$P(PROBLEM,U,2)) W ! ; KER
  . S PROB=$$TEXT^GMPLBLD1($P(PROBLEM,U,3)) I PROB="^" S GMPQUIT=1 Q
  . I PROB="@" D DELETE^GMPLBLD1(IFN) S GMPREBLD=1 Q
  . S CODE=$$CODE^GMPLBLD1($P(PROBLEM,U,4)) I CODE="^" S GMPQUIT=1 Q

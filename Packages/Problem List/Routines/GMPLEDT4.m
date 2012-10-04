@@ -1,5 +1,5 @@
-GMPLEDT4 ; SLC/MKB -- Problem List Edit actions cont ;3-7-96 2:00pm
- ;;2.0;Problem List;**5**;Aug 25, 1994
+GMPLEDT4 ; SLC/MKB -- Problem List Edit actions cont ;09/14/12
+ ;;2.0;Problem List;**5,260002**;Aug 25, 1994
 TERM ; edit field 1.01
  N PROB,TERM,ICD,DUP,Y
 T1 W !,"PROBLEM: "_$P(GMPFLD(.05),U,2)_"//"
@@ -18,11 +18,12 @@ T2 ; new text -- pass to look-up
  I '$D(GMPLUSER)!($D(GMPLUSER)&('GMPARAM("CLU"))) S GMPFLD(1.01)="",GMPFLD(.05)=U_PROB Q
  D SEARCH^GMPLX(.PROB,.Y,"PROBLEM: ","1") ; pass to CLU
  S TERM=$G(Y),ICD=$G(Y(1)) I +TERM'>0 S GMPQUIT=1 Q
- S DUP=$$DUPL^GMPLX(+GMPDFN,+TERM,PROB)
+ N %
+ S %=$$DUPL^GMPLAPI2(.DUP,+GMPDFN,+TERM,PROB,0)
  I DUP,'$$DUPLOK^GMPLX(DUP) W ! G T1
  S GMPFLD(1.01)=$S(+TERM>1:TERM,1:""),GMPFLD(.05)=U_PROB
- S GMPFLD(.01)=$S($L(ICD):$O(^ICD9("AB",ICD_" ",0))_U_ICD,1:"")
- S:'GMPFLD(.01) GMPFLD(.01)=$$NOS^GMPLX
+ S GMPFLD(.01)=$S($L(ICD):$$ICD9KEY^GMPLEXT(ICD)_U_ICD,1:"")
+ S:'GMPFLD(.01) GMPFLD(.01)=$$NOS^GMPLEXT()
  Q
  ;
 TEXT(DFLT) ; Enter/edit provider narrative text (no lookup)
@@ -34,7 +35,7 @@ TEXT(DFLT) ; Enter/edit provider narrative text (no lookup)
  ;
 NTES ; Edit existing note, display # in XQORNOD(0)
  N NUM,NOTE,X,Y,PROMPT,DEFAULT,NT
- S NT=$S(GMPVA:7,1:5) S:$D(^XUSEC("GMPL ICD CODE",DUZ)) NT=NT+1
+ S NT=$S(GMPVA:7,1:5) S:$$KCHK^XUSRB("GMPL ICD CODE") NT=NT+1
  S NUM=+$P(XQORNOD(0),U,3)-NT Q:NUM'>0
  S NOTE=GMPFLD(10,NUM),DEFAULT=$P(NOTE,U,3)
  S PROMPT="NOTE "_$$EXTDT^GMPLX($P(NOTE,U,5))_": "

@@ -1,4 +1,4 @@
-GMPLUTL1 ; SLC/MKB/KER -- PL Utilities (cont)               ; 03/29/12
+GMPLUTL1 ; SLC/MKB/KER -- PL Utilities (cont)               ; 09/14/12
  ;;2.0;Problem List;**3,8,7,9,26,35,39,260002**;Aug 25, 1994
  ;
  ; External References
@@ -25,34 +25,34 @@ GMPLUTL1 ; SLC/MKB/KER -- PL Utilities (cont)               ; 03/29/12
  ;                   
  Q
 DIAGNOSI ; ICD Diagnosis Pointer
- S:'$L($G(PL("DIAGNOSIS"))) PL("DIAGNOSIS")=$$NOS^GMPLX
- Q:$D(^ICD9(+PL("DIAGNOSIS"),0))
+ S:'$L($G(PL("DIAGNOSIS"))) PL("DIAGNOSIS")=$$NOS^GMPLEXT()
+ Q:$$ICDCODE^GMPLEXT(+PL("DIAGNOSIS"))=""
  S GMPQUIT=1,PLY(0)="Invalid ICD Diagnosis"
  Q
  ;
 LEXICON ; Clinical Lexicon Pointer
  S:'$L($G(PL("LEXICON"))) PL("LEXICON")=1
- Q:$D(^LEX(757.01,+PL("LEXICON"),0))
+ Q:$$CONTEXT^GMPLEXT(+PL("LEXICON"))'=""
  S GMPQUIT=1,PLY(0)="Invalid Lexicon term"
  Q
 DUPLICAT ; Problem Already on the List 
  N DUPL,GMPARAM
  D GET^GMPLSITE(.GMPARAM)
  Q:GMPARAM("SDP")'=1
- S:'$L($G(PL("DIAGNOSIS"))) PL("DIAGNOSIS")=$$NOS^GMPLX
+ S:'$L($G(PL("DIAGNOSIS"))) PL("DIAGNOSIS")=$$NOS^GMPLEXT()
  S %=$$DUPL^GMPLAPI2(.DUPL,GMPDFN,+PL("DIAGNOSIS"),PL("NARRATIVE"),1)
  I DUPL S GMPQUIT=1,PLY(0)="Duplicate problem"
  Q
  ;
 LOCATION ; Hospital Location (Clinic) Pointer
  S:'$D(PL("LOCATION")) PL("LOCATION")="" Q:'$L(PL("LOCATION"))
- I $D(^SC(+PL("LOCATION"),0)) S:$P(^(0),U,3)'="C" PL("LOCAATION")="" Q
+ I $$CLINNAME^GMPLEXT(+PL("LOCATION")) S:$$LOCTYPE^GMPLEXT(+PL("LOCATION"))'="C" PL("LOCATION")="" Q
  S GMPQUIT=1,PLY(0)="Invalid hospital location"
  Q
  ;
 PROVIDER ; Responsible Provider
  S:'$D(PL("PROVIDER")) PL("PROVIDER")=""
- Q:'$L(PL("PROVIDER"))  Q:$D(^VA(200,+PL("PROVIDER"),0))
+ Q:'$L(PL("PROVIDER"))  Q:$$ACTIVE^XUSER(+PL("PROVIDER"))'=""
  S GMPQUIT=1,PLY(0)="Invalid provider"
  Q
  ;

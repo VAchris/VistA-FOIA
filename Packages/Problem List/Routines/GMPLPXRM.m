@@ -1,5 +1,5 @@
-GMPLPXRM ; SLC/PKR - Build Clinical Reminder indexes for AUPNPROB. ;02/27/2004
-        ;;2.0;Problem List;**27**;Aug 25, 1994
+GMPLPXRM ; SLC/PKR - Build Clinical Reminder indexes for AUPNPROB. ;09/14/12
+ ;;2.0;Problem List;**27,260002**;Aug 25, 1994
  ;DBIA 4113 supports PXRMSXRM entry points. 
  ;DBIA 4114 supports setting and killing ^PXRMINDX(9000011)
  ;===============================================================
@@ -42,7 +42,7 @@ INDEX ;Build the indexes for PROBLEM LIST.
  . I PROB="" D  Q
  .. S ETEXT=DAS_" missing problem"
  .. D ADDERROR^PXRMSXRM(GLOBAL,ETEXT,.NERROR)
- . I '$D(^ICD9(PROB)) D  Q
+ . I $$ICDCODE^GMPLEXT(PROB)="" D  Q
  .. S ETEXT=DAS_" invalid ICD9"
  .. D ADDERROR^PXRMSXRM(GLOBAL,ETEXT,.NERROR)
  . S DFN=$P(TEMP,U,2)

@@ -1,4 +1,4 @@
-SDAPIE ;RGI/CBR - Scheduling Error provider; 08/10/2012
+SDAPIE ;RGI/CBR - Scheduling Error provider; 09/24/2012
  ;;5.3;scheduling;**260003**;08/13/93;
 ERRX(RETURN,ERRNO,TEXT,LVL) ; adds error to RETURN
  N ERRTXT,IND,ST,STR,TXT,I
@@ -7,6 +7,8 @@ ERRX(RETURN,ERRNO,TEXT,LVL) ; adds error to RETURN
  S:$G(LVL)="" LVL=1
  S TEXT=$G(TEXT)
  F I=0:1 Q:$O(RETURN(I))=""!('+$O(RETURN(I)))
+ I I=0,$D(RETURN(0)) S I=I+1
+ E  S:I>0 I=I+1
  S ERRTXT=$P($T(@ERRNO),";;",2)
  S IND=1,TXT=1,STR=""
  F  Q:IND=0  D
@@ -24,6 +26,7 @@ ERRTXT(RETURN) ;
 ERRTABLE ; Error table
 INVPARAM ;;Invalid parameter value - ^$TXT1^.
 CLNINV ;;Invalid Clinic.
+CLNNFND ;;Clinic not found.
 CLNNDFN ;;Clinic not define or has no zero node.
 CLNSCIN ;;Invalid Clinic Stop Code ^$TXT1^.
 CLNSCRD ;;Clinic's Stop Code ^$TXT1^ cannot be used. Restriction date is ^$TXT2^ ^$TXT3^.
@@ -47,6 +50,7 @@ APTCLUV ;;There is no availability for this date/time.
 APTEXCD ;;EXCEEDS MAXIMUM DAYS FOR FUTURE APPOINTMENT!!
 APTSHOL ;;^$TXT1^??
 APTPAHA ;;PATIENT ALREADY HAS APPOINTMENT ^$TXT1^ THEN.
+APTPAHU ;;o  Patient already has an appt on ^$TXT1^
 APTPHSD ;;PATIENT ALREADY HAS APPOINTMENT ON THE SAME DAY ^$TXT1^
 APTPPCP ;;THIS TIME WAS PREVIOUSLY CANCELLED BY THE PATIENT
 APTOVBK ;;OVERBOOK!
@@ -72,3 +76,4 @@ APTCOTS ;;>>> It is too soon to check out this appointment.
 APTCOCN ;;>>> You cannot check out this appointment.
 APTCOAC ;;Appointment already checked out
 APTCONW ;;Appointment new encounter
+APTWHEN ;;WHEN??

@@ -1,4 +1,4 @@
-SDAM2 ;ALB/MJK - Appt Mgt (cont); 07/19/2012  ; Compiled April 16, 2007 09:43:32
+SDAM2 ;ALB/MJK - Appt Mgt (cont); 09/24/2012  ; Compiled April 16, 2007 09:43:32
  ;;5.3;Scheduling;**250,296,327,478,446,260003**;Aug 13, 1993;Build 77
  ;
 CI ; -- protocol SDAM APPT CHECK IN entry pt
@@ -24,9 +24,12 @@ ONE(DFN,SDCL,SDT,SDDA,SDASK,SDAMCIDT) ; -- check in one appt
  ;       SDASK := ask d/t of ci always [1|yes or 0|no]
  ;    SDAMCIDT := ci date/time [optional]
  ;
- N APT
+ N APT,OAPT
  I $D(XRTL) D T0^%ZOSV
- S %=$$CHECKIN^SDMAPI2(.APT,DFN,SDT,SDCL)
+ S %=$$GETSCAP^SDMAPI1(.OAPT,SDCL,DFN,SDT)
+ I $D(OAPT),OAPT("CHECKIN")]"" S CIDT=$$READ^SDMUTL("DO^::EXTR^","CHECKED-IN",$$FTIME^VALM1(OAPT("CHECKIN")),"^D HELP^%DTC")
+ E  S CIDT=$$NOW^XLFDT()
+ S %=$$CHECKIN^SDMAPI2(.APT,DFN,SDT,SDCL,.CIDT)
  I '% W !!,*7,$P(APT(0),U,2) D PAUSE^VALM1 G ONEQ
  I '$P(APT("AFTER","STATUS"),U,4),'$P(APT("BEFORE","STATUS"),U,4) W !?8,*7,"...appointment has not been checked in" D PAUSE^VALM1
  I APT("BEFORE","STATUS")'=APT("AFTER","STATUS") D

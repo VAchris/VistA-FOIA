@@ -1,4 +1,4 @@
-PXCAPL ;ISL/dee & LEA/Chylton,SCK - Validates data from the PCE Device Interface into a call to update Problem List ;03/27/12
+PXCAPL ;ISL/dee & LEA/Chylton,SCK - Validates data from the PCE Device Interface into a call to update Problem List ;09/21/12
  ;;1.0;PCE PATIENT CARE ENCOUNTER;**24,27,115,130,168,194,260002**;Aug 12, 1996;Build 2
  Q
  ;   PXCAPROB  Copy of a Problem node of the PXCA array
@@ -11,7 +11,7 @@ PXCAPL ;ISL/dee & LEA/Chylton,SCK - Validates data from the PCE Device Interface
  ;
 PROBLEM(PXCA,PXCABULD,PXCAERRS) ;
  Q:'$D(PXCA("PROBLEM"))
- I '$D(^AUPNPROB)!($T(UPDATE^GMPLUTL)="") S PXCA("WARNING","PROBLEM",0,0,0)="Problem List Package is not installed" Q
+ I '$$GLBINST^GMPLAPI2()!($T(UPDATE^GMPLUTL)="") S PXCA("WARNING","PROBLEM",0,0,0)="Problem List Package is not installed" Q
  N PXCAPROB,PXCAPRV,PXCAINDX
  N PXCAITEM,PXCAITM2,VALID,PAT
  S PXCAPRV=""

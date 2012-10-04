@@ -1,5 +1,5 @@
-SDPPTEM ;BP-CIOFO/KEITH - Patient Profile Team Info ; 8/27/99 10:39am
- ;;5.3;Scheduling;**41,177,297**;AUG 13, 1993
+SDPPTEM ;BP-CIOFO/KEITH - Patient Profile Team Info ; 08/31/2012
+ ;;5.3;Scheduling;**41,177,297,260003**;AUG 13, 1993
  ;
  ;Gathering Team Information for Patient Profile
  ;
@@ -27,7 +27,8 @@ TDATA(DFN,VALMCNT,SDATE,SDPRT,SDCOL) ;Team information - gather, format and opti
  .S SDX=$G(^TMP("SDPLIST",$J,DFN,"PCTM",SDI)) Q:'$L(SDX)
  .S SDY=""
  .D S1("Primary Care Team",$P(SDX,U,2))
- .S SDPH=$P($G(^SCTM(404.51,+SDX,0)),U,2) D:$L(SDPH) S2("Phone",SDPH)
+ .S %=$$GETEAM^SCTMAPI1(.TEAM,+SDX)
+ .S SDPH=$P(TEAM("TEAM PHONE NUMBER"),U) D:$L(SDPH) S2("Phone",SDPH)
  .S:$P(SDX,U,3) SDPTA($P(SDX,U,3))=""
  .D STL(SDY)
  .Q
@@ -91,7 +92,8 @@ TDATA(DFN,VALMCNT,SDATE,SDPRT,SDCOL) ;Team information - gather, format and opti
  .S SDTMN=0 F  S SDTMN=$O(SDTEAM(SDTM,SDTMN)) Q:'SDTMN  D
  ..I SDLN>0 D STL("")
  ..S SDY="" D S1("Non-PC Team",SDTM)
- ..S SDPH=$P($G(^SCTM(404.51,+SDTMN,0)),U,2) D:$L(SDPH) S2("Phone",SDPH)
+ ..S %=$$GETEAM^SCTMAPI1(.TEAM,+SDX)
+ ..S SDPH=$P(TEAM("TEAM PHONE NUMBER"),U) D:$L(SDPH) S2("Phone",SDPH)
  ..D STL(SDY) S SDPO=""
  ..F  S SDPO=$O(SDTEAM(SDTM,SDTMN,SDPO)) Q:SDPO=""  S SDPON=0 D
  ...F  S SDPON=$O(SDTEAM(SDTM,SDTMN,SDPO,SDPON)) Q:'SDPON  D

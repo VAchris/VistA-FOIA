@@ -1,5 +1,5 @@
-SCMCQK ;ALB/REW - Single Pt Tm/Pt Tm Pos Assign and Discharge ; 1 Jul 1998
- ;;5.3;Scheduling;**148,177,297**;AUG 13, 1993
+SCMCQK ;ALB/REW - Single Pt Tm/Pt Tm Pos Assign and Discharge ; 09/25/2012
+ ;;5.3;Scheduling;**148,177,297,260003**;AUG 13, 1993
  ;
 EN ; - main call
  W !,"Primary Care Team/PC Assignment/Unassignment",!
@@ -92,9 +92,6 @@ ERROR ;
  ;
 PATIENT() ;Return Patient DFN or -1
  ;
- N DIC,X,Y
- W !!!
- S DIC=2
- S DIC(0)="AEMQZ"
- D ^DIC
- Q $S($D(DTOUT):-1,$D(DUOUT):-1,(Y<0):-1,1:+Y)
+ N Y
+ S Y=$$SELECT^SDMUTL("Patient")
+ Q $S(Y="^":-1,(Y<0):-1,1:+Y)

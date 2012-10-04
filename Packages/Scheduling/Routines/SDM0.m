@@ -1,12 +1,12 @@
-SDM0 ;SF/GFT - MAKE APPOINTMENT ; 11 Jun 2001  5:20 PM
- ;;5.3;Scheduling;**140,167,206,186,223,237,241,384,334,547**;Aug 13, 1993;Build 17
+SDM0 ;SF/GFT - MAKE APPOINTMENT ; 09/19/2012  5:20 PM
+ ;;5.3;Scheduling;**140,167,206,186,223,237,241,384,334,547,260003**;Aug 13, 1993;Build 17
  I $D(SDXXX) S SDOK=1 Q
  N SDSRTY,SDDATE,SDSDATE,SDSRFU,SDDMAX,SDONCE
  ;Prompt for scheduling request type
 M N SDHX,SDXF,SDXD
  Q:'$$SRTY(.SDSRTY)  S:SDSRTY SDDATE=DT
  ;Calculate appointment follow-up indicator
- S SDSRFU=$$PTFU(DFN,SC)
+ W !!,"Calculating follow-up status"
  ;Determine maximum days for scheduling
  S SDMAX(1)=$P($G(^SC(+SC,"SDP")),U,2) S:'SDMAX(1) SDMAX(1)=365
  S (SDMAX,SDDMAX)=$$FMADD^XLFDT(DT,SDMAX(1))

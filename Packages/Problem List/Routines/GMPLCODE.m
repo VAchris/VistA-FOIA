@@ -1,4 +1,4 @@
-GMPLCODE ; SLC/MKB/AJB -- Problem List ICD Code Utilities ; 03/28/12
+GMPLCODE ; SLC/MKB/AJB -- Problem List ICD Code Utilities ; 09/14/12
  ;;2.0;Problem List;**260002**;Aug 25, 1994
 EN ; -- main entry point for GMPL CODE LIST
  K GMPLUSER
@@ -36,8 +36,9 @@ EDIT ; -- edit field .01
  S GMPLNO=$L(GMPLSEL,",")
  F GMPI=1:1:GMPLNO S GMPLNUM=$P(GMPLSEL,",",GMPI) I GMPLNUM D  Q:$D(GMPQUIT)
  . S GMPIFN=$P($G(^TMP("GMPLIDX",$J,+GMPLNUM)),U,2) Q:GMPIFN'>0
- . L +^AUPNPROB(GMPIFN,0):1 I '$T W $C(7),!!,$$LOCKED^GMPLX,! H 2 Q
- . D ICD(GMPLNUM,GMPIFN) L -^AUPNPROB(GMPIFN,0)
+ . I '$$LOCK^GMPLDAL(GMPIFN,0) W $C(7),!!,$$LOCKED^GMPLX,! H 2 Q
+ . D ICD(GMPLNUM,GMPIFN)
+ . D UNLOCK^GMPLDAL(GMPIFN,0)
  S:$D(GMPSAVED) VALMBCK="R"
 EDQ D KILL^GMPLX S VALMSG=$$MSG^GMPLX
  Q
@@ -53,7 +54,7 @@ ICD(NUM,IFN) ; -- search ICD Diagnosis file #80
  ; Added for Code Set Versioning (CSV) - screen allows ONLY active codes
  S DIR("S")="I +($$STATCHK^ICDAPIU($$CODEC^ICDCODE(+($G(Y))),DT))>0"
  D ^DIR I $D(DTOUT)!($D(DUOUT)) S GMPQUIT=1 Q
- I X="@" Q:'$D(DIR("B"))  S:$$SURE^GMPLX Y=$$NOS^GMPLX
+ I X="@" Q:'$D(DIR("B"))  S:$$SURE^GMPLX Y=$$NOS^GMPLEXT()
  I +Y>0,Y'=OLD D  S GMPSAVED=1
  . S NEW=Y
  . S %=$$REPLACE^GMPLAPI4(.RET,IFN,NEW)

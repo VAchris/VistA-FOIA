@@ -1,4 +1,4 @@
-GMPL ; SLC/MKB/AJB -- Problem List Driver ; 05/21/12
+GMPL ; SLC/MKB/AJB -- Problem List Driver ; 09/21/12
  ;;2.0;Problem List;**3,11,28,260002**;Aug 25, 1994
 EN ; -- main entry point for GMPL PROBLEM LIST
  S GMPLUSER=1
@@ -73,10 +73,11 @@ EDIT ; -- edit allowable fields of a problem
  ; I '$$CODESTS^GMPLX(GMPIFN,DT) W !!,$$PROBTEXT^GMPLX(GMPIFN),!,"has an inactive ICD code.",! H 3 G EDQ
  S %=$$DELETED^GMPLAPI2(.DELETED,GMPIFN)
  I DELETED W !!,$$PROBTEXT^GMPLX(GMPIFN),!,"has been removed from this patient's problem list!",! H 2 G EDQ
- ;L +^AUPNPROB(GMPIFN,0):1 I '$T W $C(7),!!,$$LOCKED^GMPLX,! H 2 G EDQ
+ I '$$LOCK^GMPLDAL(GMPIFN,0) W $C(7),!!,$$LOCKED^GMPLX,! H 2 G EDQ
  D EN^VALM("GMPL EDIT PROBLEM")
  I $D(GMPSAVED) D BUILD^GMPLMGR(.GMPLIST),HDR^GMPLMGR S GMPRINT=1
- S VALMBCK="R" ;L -^AUPNPROB(GMPIFN,0)
+ S VALMBCK="R"
+ D UNLOCK^GMPLDAL(GMPIFN,0)
 EDQ D KILL^GMPLX S VALMSG=$$MSG^GMPLX S:'VALMCC VALMBCK="R"
  Q
  ;

@@ -1,5 +1,5 @@
-GMPLDIS1 ; SLC/MKB -- Displays current/default values for saving ;5/26/94  15:22
- ;;2.0;Problem List;;Aug 25, 1994
+GMPLDIS1 ; SLC/MKB -- Displays current/default values for saving ;09/13/12
+ ;;2.0;Problem List;**260002**;Aug 25, 1994
 ACCEPT(GMPFLD) ; accept current values of problem to save?
  N DIR,X,Y D DISPLAY W !
  S DIR(0)="SAOM^S:SAVE;E:EDIT;Q:QUIT;",DIR("B")="SAVE"
@@ -39,6 +39,6 @@ DIS1 W !! W:'VALMCC $$REPEAT^XLFSTR("-",79)
  E  W !,"   Clinic: "_$P(GMPFLD(1.08),U,2)
  W:$L(SP,U)>2 ?65,$P(SP,U,3)
  W !," Recorded: "_$P(GMPFLD(1.09),U,2)_" by "_$P(GMPFLD(1.04),U,2)
- I $D(^XUSEC("GMPL ICD CODE",DUZ)) W ?55,"ICD Code: "_$P(GMPFLD(.01),U,2)
+ I $$KCHK^XUSRB("GMPL ICD CODE") W ?55,"ICD Code: "_$P(GMPFLD(.01),U,2)
  W:'VALMCC !,$$REPEAT^XLFSTR("-",79)
  Q

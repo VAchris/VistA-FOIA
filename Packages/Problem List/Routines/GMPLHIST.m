@@ -1,4 +1,4 @@
-GMPLHIST ; SLC/MKB/KER -- Problem List Historical data ; 05/21/12
+GMPLHIST ; SLC/MKB/KER -- Problem List Historical data ; 09/13/12
  ;;2.0;Problem List;**7,26,,31,35,260002**;Aug 25, 1994
  ;
  ; External References
@@ -7,7 +7,7 @@ GMPLHIST ; SLC/MKB/KER -- Problem List Historical data ; 05/21/12
 AUDET(RETURN,AIFN) ; Returns the audit entry details
  ; RETURN
  ; AIFN - Audit entry IFN
- N NODE,DATE,FLD,PROV,OLD,NEW,ROOT,CHNGE,REASON,LCNT,AUDIT
+ N NODE,DATE,FLD,PROV,OLD,NEW,ROOT,CHNGE,REASON,LCNT,AUDIT,%
  S %=$$GETADATA^GMPLDAL2(.AUDIT,AIFN)
  Q:$D(AUDIT(0))'>0 0
  S RETURN("DATE")=$$EXTDT^GMPLX(AUDIT(0,2))
@@ -49,7 +49,7 @@ GETHIST(RETURN,GMPIFN) ; Returns all audit entries of the problem
  ; RETURN - By reference, problem history
  ;  RETURN(I)=Audit IFN
  ; GMIFN - Problem IFN
- N VALID
+ N VALID,%
  S RETURN=0
  S %=$$VALID^GMPLAPI4(.VALID,GMPIFN)
  I 'VALID D ERRX^GMPLAPIE(.RETURN,"PRBNFND") Q 0
@@ -66,7 +66,7 @@ GETAUDIT(RETURN,GMPIFN,FIELD,VALUE) ; Returns all audit data of the problem
  ; FIELD - If is specified, will returns changes only made at this field
  ; VALUE - If both FIELD and VALUE is specified, will returns changes made at FIELD
  ;   and having current value equals with VALUE
- N IDT,PROB,RET,VALID
+ N IDT,PROB,RET,VALID,%
  S RETURN=0
  S %=$$VALID^GMPLAPI4(.VALID,GMPIFN)
  I 'VALID D ERRX^GMPLAPIE(.RETURN,"PRBNFND") Q 0
@@ -95,9 +95,8 @@ AUDITX(RETURN,GMPIFN,FIELD,VALUE) ; Returns all audit data of the problem
  ; FIELD - If is specified, will returns changes only made at this field
  ; VALUE - If both FIELD and VALUE is specified, will returns changes made at FIELD
  ;   and having current value equals with VALUE
- N IDT,FLD,CNT,RET
+ N IDT,FLD,CNT,RET,%,VALID
  S CNT=0,RETURN=CNT,IDT=0
- N VALID
  S %=$$VALID^GMPLAPI4(.VALID,GMPIFN)
  I 'VALID D ERRX^GMPLAPIE(.RETURN,"PRBNFND") Q 0
  D AUDITX^GMPLDAL2(.RET,GMPIFN,$G(FIELD),$G(VALUE))

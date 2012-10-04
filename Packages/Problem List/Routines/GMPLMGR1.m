@@ -1,4 +1,4 @@
-GMPLMGR1 ; SLC/MKB -- Problem List VALM Utilities cont ; 03/28/12
+GMPLMGR1 ; SLC/MKB -- Problem List VALM Utilities cont ;09/14/12
  ;;2.0;Problem List;**10,260002**;Aug 25, 1994
 NEWPAT ; select new patient
  N NEWPT S VALMBCK="R"
@@ -95,8 +95,8 @@ NPRV R !,"Select PROVIDER: ",X:DTIME I '$T!(X["^") S GMPQUIT=1 Q
  Q
  ;
 KEYS ; adds to XQORM("KEY") array
- I $G(GMPARAM("VER")) S XQORM("KEY","$")=$O(^ORD(101,"B","GMPL VERIFY",0))_"^1"
-KEY S XQORM("KEY","=")=$O(^ORD(101,"B","VALM NEXT SCREEN",0))_"^1"
+ I $G(GMPARAM("VER")) S XQORM("KEY","$")=$$PROTKEY^GMPLEXT("GMPL VERIFY")_"^1"
+KEY S XQORM("KEY","=")=$$PROTKEY^GMPLEXT("VALM NEXT SCREEN")_"^1"
  Q
  ;
 GETPLIST(PLIST,TOTAL,VIEW) ; Build PLIST(#)=IFN for view

@@ -1,5 +1,5 @@
-GMPLMENU ; SLC/MKB -- VALM Utilities for Add Menu sub-list ;5/26/94  15:55
- ;;2.0;Problem List;**11**;Aug 25, 1994
+GMPLMENU ; SLC/MKB -- VALM Utilities for Add Menu sub-list ;09/14/12
+ ;;2.0;Problem List;**11,260002**;Aug 25, 1994
 HDR ; -- header code
  N PAT,NUM,LIST S NUM=GMPLCNT_" problem(s) added"
  S PAT=$P(GMPDFN,U,2)_"  ("_$P(GMPDFN,U,3)_")"
@@ -54,7 +54,7 @@ BLDQ S ^TMP("GMPLMENU",$J,"LIST",0)=NUM_U_LCNT,VALMCNT=LCNT,GMPLCNT=0,VALMSG=$$M
  ;
 KEYS ; -- setup XQORM("KEY") array for menu
  N I,PROTCL,NUM S NUM=+$G(^TMP("GMPLMENU",$J,"LIST",0))
- S PROTCL=$O(^ORD(101,"B","GMPL LIST SELECT ITEM",0))_"^1"
+ S PROTCL=$$PROTKEY^GMPLEXT("GMPL LIST SELECT ITEM")_"^1"
  F I=1:1:NUM S XQORM("KEY",I)=PROTCL
  S VALMSG=$$MSG
  Q
@@ -77,7 +77,8 @@ ITEM ; -- select item from menu
  S GMPTERM=$S(+ITEM>1:$P(ITEM,U,1,2),1:""),GMPROB=$P(ITEM,U,2)
  S CODE=$P(ITEM,U,3),GMPICD=$S('$L(CODE):"799.9",1:CODE)
  W !!!,">>>  Adding problem #"_NUM_" '"_GMPROB_"' ..."
- S DUP=$$DUPL^GMPLX(+GMPDFN,+GMPTERM,GMPROB)
+ N %
+ S %=$$DUPL^GMPLAPI2(.DUP,+GMPDFN,+GMPTERM,GMPROB,0)
  I DUP,'$$DUPLOK^GMPLX(DUP) G ITQ
  D ADD1^GMPL1
 ITQ I $D(GMPSAVED) D  D HDR

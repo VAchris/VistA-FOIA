@@ -1,4 +1,4 @@
-GMPL1 ; SLC/MKB/AJB -- Problem List actions ; 03/19/12
+GMPL1 ; SLC/MKB/AJB -- Problem List actions ; 09/13/12
  ;;2.0;Problem List;**3,20,28,260002**;Aug 25, 1994
  ; 10 MAR 2000 - MA - Added to the routine another user prompt
  ; to backup and refine Lexicon search if ICD code 799.9
@@ -6,7 +6,7 @@ ADD ;add new entry to list - Requires GMPDFN
  N GMPROB,GMPTERM,GMPICD,Y,DUP,GMPIFN,GMPFLD
  W !
  S GMPROB=$$TEXT^GMPLEDT4("") I GMPROB="^" S GMPQUIT=1 Q
- I 'GMPARAM("CLU")!('$D(GMPLUSER)&('$$HASKEY^GMPLEXT("GMPL ICD CODE"))) S GMPTERM="",GMPICD="799.9" G ADD1
+ I 'GMPARAM("CLU")!('$D(GMPLUSER)&('$$KCHK^XUSRB("GMPL ICD CODE"))) S GMPTERM="",GMPICD="799.9" G ADD1
  F  D  Q:$D(GMPQUIT)!(+$G(Y))
  . D SEARCH^GMPLX(.GMPROB,.Y,"PROBLEM: ","1")
  . I +Y'>0 S GMPQUIT=1 Q

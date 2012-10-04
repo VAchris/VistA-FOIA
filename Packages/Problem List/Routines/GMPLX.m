@@ -1,5 +1,5 @@
-GMPLX ; SLC/MKB/AJB -- Problem List Problem Utilities ; 02/27/2004
- ;;2.0;Problem List;**7,23,26,28,27**;Aug 25, 1994
+GMPLX ; SLC/MKB/AJB -- Problem List Problem Utilities ;09/14/12
+ ;;2.0;Problem List;**7,23,26,28,27,260002**;Aug 25, 1994
  ;
  ; External References
  ;   DBIA   446  ^AUTNPOV(
@@ -17,31 +17,24 @@ GMPLX ; SLC/MKB/AJB -- Problem List Problem Utilities ; 02/27/2004
  ;   DBIA  3991  $$STATCHK^ICDAPIU
  ;
 SEARCH(X,Y,PROMPT,UNRES,VIEW) ; Search Lexicon for Problem X
- N DIC S:'$L($G(VIEW)) VIEW="PL1" D CONFIG^LEXSET("GMPL",VIEW,DT)
+ N DIC
+ S:'$L($G(VIEW)) VIEW="PL1"
+ D CONFIG^LEXSET("GMPL",VIEW,DT)
  S DIC("A")=$S($L($G(PROMPT)):PROMPT,1:"Select PROBLEM: ")
  S DIC="^LEX(757.01,",DIC(0)=$S('$L($G(X)):"A",1:"")_"EQM"
  S:'$G(UNRES) LEXUN=0 D ^DIC S:+Y>1 X=$P(Y,U,2)
  Q
  ;
-PROVNARR(X,CL) ; Returns IFN ^ Text of Narrative (#9999999.27)
- N DIC,Y,DLAYGO,DD,DO,DA S:$L(X)>80 X=$E(X,1,80)
- S DIC="^AUTNPOV(",DIC(0)="L",DLAYGO=9999999.27,(DA,Y)=0
- F  S DA=$O(^AUTNPOV("B",$E(X,1,30),DA)) Q:DA'>0  I $P(^AUTNPOV(DA,0),U)=X S Y=DA_U_X Q
- I '(+Y) K DA,Y D FILE^DICN S:Y'>0 Y=U_X I Y>0,CL>1 S ^AUTNPOV(+Y,757)=CL
- Q $P(Y,U,1,2)
- ;
 PROBTEXT(IFN) ; Returns Display Text
- N X,Y,GMPLEXP,GMPLPOV,GMPLSO,GMPLTXT
- S Y=$P($G(^AUPNPROB(+IFN,0)),U,5),X=$P($G(^AUTNPOV(+Y,0)),U)
+ N X,Y,GMPLEXP,GMPLPOV,GMPLSO,GMPLTXT,%,PRB
+ S %=$$DETAIL^GMPLAPI2(.PRB,+IFN)
+ S Y=$P($G(PRB(.05)),U),X=$P($G(PRB(.05)),U,2)
  S GMPLEXP=$$EP(IFN),GMPLSO=$$CS(X),GMPLPOV=$$PT(X,GMPLSO)
  S GMPLTXT=GMPLPOV S:$L(GMPLEXP) GMPLTXT=GMPLTXT_" ("_GMPLEXP_")"
  S:$L(GMPLSO) GMPLTXT=GMPLTXT_" "_GMPLSO
  S:GMPLTXT["*" GMPLTXT=$TR(GMPLTXT,"*","")
  ;S:$L(GMPLTXT) GMPLTXT=GMPLTXT_" ("_$$HFP^GMPLUTL4_","_$$PTR^GMPLUTL4_")"
  S:$L(GMPLTXT) X=GMPLTXT Q X
-PROBNARR(IFN) ; Returns Provider Narrative
- N X,Y S Y=$P($G(^AUPNPROB(+IFN,0)),U,5),X=$P($G(^AUTNPOV(+Y,0)),U)
- Q X
 CS(X) ; Problem Codes
  N GMPLSAB,GMPLSO S GMPLSO="" S X=$G(X) Q:X'["(" ""
  F GMPLSAB="ICD-","CPT-","DSM-","HCPCS","NANDA","NIC","NOC","LOINC","SNOMED","OMAHA" S:$G(X)[("("_GMPLSAB) GMPLSO="("_GMPLSAB_$P(X,("("_GMPLSAB),2,299) Q:$L(GMPLSO)
@@ -74,9 +67,6 @@ WRQ ;   Quit Wrap
  S TEXT=J
  Q
  ;
-NOS() ; Return PTR ^ 799.9 ICD code
- N X S X=$O(^ICD9("BA",799.9,0)) Q (+X_"^799.9")
- ;
 SEL(HELP) ; Select List of Problems
  N X,Y,DIR,MAX S MAX=+$G(^TMP("GMPL",$J,0)) I MAX'>0 Q "^"
  S DIR(0)="LAO^1:"_MAX,DIR("A")="Select Problem(s)"
@@ -97,24 +87,17 @@ SEL1(HELP) ; Select 1 Problem
  D ^DIR I $D(DTOUT)!(X="") S Y="^"
  Q Y
  ;
-DUPL(DFN,TERM,TEXT) ; Check's for Duplicate Entries
- N DA,IFN,NODE0,NODE1 S DA=0,TEXT=$$UP^XLFSTR(TEXT)
- I '$D(^AUPNPROB("C",TERM))!('$D(^AUPNPROB("AC",DFN))) Q DA
- F IFN=0:0 S IFN=$O(^AUPNPROB("AC",DFN,IFN)) Q:IFN'>0  D  Q:DA>0
- . S NODE0=$G(^AUPNPROB(IFN,0)),NODE1=$G(^(1)) Q:$P(NODE1,U,2)="H"
- . I TERM>1 S:+NODE1=TERM DA=IFN Q
- . S:TEXT=$$UP^XLFSTR($P(^AUTNPOV($P(NODE0,U,5),0),U)) DA=IFN
- Q DA
- ;
 DUPLOK(IFN) ; Ask to Duplicate Problem
- N DIR,X,Y,GMPL0,GMPL1,DATE,PROV S DIR(0)="YA",GMPL0=$G(^AUPNPROB(IFN,0)),GMPL1=$G(^(1))
+ N DIR,X,Y,DATE,PRB,%,PROV
+ S DIR(0)="YA"
+ S %=$$DETAIL^GMPLAPI2(.PRB,IFN)
  S DIR("A")="Are you sure you want to continue? ",DIR("B")="NO"
  S DIR("?",1)="Enter YES if you want to duplicate this problem on this patient's list;",DIR("?")="press <return> to re-enter the problem name."
  W $C(7),!!,">>>  "_$$PROBTEXT(IFN),!?5,"is already an "
- W $S($P(GMPL0,U,12)="I":"IN",1:"")_"ACTIVE problem on this patient's list!",!
- S PROV=+$P(GMPL1,U,5) W:PROV !?5,"Provider: "_$P($G(^VA(200,PROV,0)),U)_" ("_$P($$SERVICE^GMPLX1(PROV),U,2)_")"
- I $P(GMPL0,U,12)="A" W !?8,"Onset: " S DATE=$P(GMPL0,U,13)
- I $P(GMPL0,U,12)="I" W !?5,"Resolved: " S DATE=$P(GMPL1,U,7)
+ W $S($P(PRB(.12),U)="I":"IN",1:"")_"ACTIVE problem on this patient's list!",!
+ S PROV=+PRB(1.05) W:PROV !?5,"Provider: "_$P(PRB(1.05),U,2)_" ("_$P($$SERVICE^GMPLEXT(PROV),U,2)_")"
+ I $P(PRB(.12),U)="A" W !?8,"Onset: " S DATE=$P(PRB(.13),U)
+ I $P(PRB(.12),U)="I" W !?5,"Resolved: " S DATE=$P(PRB(1.07),U)
  W $S(DATE>0:$$FMTE^XLFDT(DATE),1:"unspecified"),!
  D ^DIR W !
  Q +Y
@@ -135,23 +118,6 @@ EXTDT(DATE) ; Formats Date into MM/DD/YY
  S:MM X=MM_"/" S:DD X=X_DD_"/" S X=$S($L(X):X_YY,1:1700+YYY)
  Q X
  ;
-AUDIT(DATA,OLD) ; Makes Entry in Audit File
- ;   DATA = string for 0-node
- ;   OLD  = string for 1-node
- ;        = 0-node from reform/react problem
- N DA,DD,DO,DIC,X,Y,DIK,DLAYGO
- S DIC="^GMPL(125.8,",DIC(0)="L",X=$P(DATA,U),DLAYGO=125.8
- D FILE^DICN Q:+Y'>0  S DA=+Y,DIK="^GMPL(125.8,"
- S ^GMPL(125.8,DA,0)=DATA D IX1^DIK
- S:$L(OLD) ^GMPL(125.8,DA,1)=OLD
- Q
- ;
-DTMOD(DA) ; Update Date Last Modified
- N DIE,DR
- S DR=".03///TODAY",DIE="^AUPNPROB("
- D ^DIE
- Q
- ;
 MSG() ; List Manager Message Bar
  Q "+ Next Screen  - Prev Screen  ?? More actions"
  ;
@@ -168,7 +134,6 @@ CODESTS(PROB,ADATE) ;check status of code associated with a problem
  ;   1  = ACTIVE on the date passed or current date if not passed
  ;   0  = INACTIVE on the date passed or current date if not passed
  ;
- I '$G(ADATE) S ADATE=DT
- I '$D(^AUPNPROB(PROB,0)) Q 0
- S PROB=$P(^AUPNPROB(PROB,0),U)
- Q +($$STATCHK^ICDAPIU($$CODEC^ICDCODE(+(PROB)),ADATE))
+ N %,RET
+ S %=$$CODESTS^GMPLAPI2(.RET,PROB,ADATE)
+ Q RET

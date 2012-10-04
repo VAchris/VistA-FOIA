@@ -1,25 +1,13 @@
-GMPLP37I ; SLC/MKB/KER -- Save Problem List data ; 10/01/2008
- ;;2.0;Problem List;**37**;Aug 25, 1994;Build 1
+GMPLP37I ; SLC/MKB/KER -- Save Problem List data ;09/21/12
+ ;;2.0;Problem List;**37,260002**;Aug 25, 1994;Build 1
  ;
  ; External References
  ;
 FIND(ACTION) ;
- N ARRAY,CNT,DAT,IEN,PL,PRI,PT,STAT
- S CNT=0
- S PT=0 F  S PT=$O(^PXRMINDX(9000011,"PSPI",PT)) Q:PT'>0  D
- .S STAT=""
- .F  S STAT=$O(^PXRMINDX(9000011,"PSPI",PT,STAT)) Q:STAT=""  D
- ..I '$D(^PXRMINDX(9000011,"PSPI",PT,STAT,0)) Q
- ..S PL=0
- ..F  S PL=$O(^PXRMINDX(9000011,"PSPI",PT,STAT,0,PL)) Q:PL'>0  D
- ...S DAT=0
- ...F  S DAT=$O(^PXRMINDX(9000011,"PSPI",PT,STAT,0,PL,DAT)) Q:DAT'>0  D
- ....S IEN=0
- ....F  S IEN=$O(^PXRMINDX(9000011,"PSPI",PT,STAT,0,PL,DAT,IEN)) Q:IEN'>0  D
- .....S CNT=CNT+1
- .....I ACTION=1 S ARRAY(CNT)=IEN
+ N ARRAY
+ D LISTPXRM^GMPLEXT(.ARRAY,ACTION)
  I ACTION=1 D UPD(.ARRAY)
- Q CNT
+ Q ARRAY
  ;
 POST ;
  N ZTDESC,ZTDTH,ZTRTN,ZTSAVE,ZTIO,TEXT,ZTSK
@@ -59,9 +47,7 @@ RETRY ;Get the message number.
  I XMZ<1 G RETRY
  ;
  ;Load the message
- M ^XMB(3.9,XMZ,2)=ARRAY
- S NL=$O(^XMB(3.9,XMZ,2,""),-1)
- S ^XMB(3.9,XMZ,2,0)="^3.92^"_+NL_U_+NL_U_DT
+ D LDMSG^GMPLEXT(XMZ,.ARRAY)
  ;
  ;Send message to USER
  S XMY(DUZ)="" D ENT1^XMD Q

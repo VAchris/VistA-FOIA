@@ -1,8 +1,8 @@
-SDMDAL4 ;RGI/CBR - APPOINTMENT API; 08/10/2012
+SDMDAL4 ;RGI/CBR - APPOINTMENT API; 10/01/2012
  ;;5.3;scheduling;**260003**;08/13/93;
 GETOE(RETURN,SDOE) ; Get outpatient encounter
- N IND
- F IND=0:0 S IND=$O(RETURN(IND)) Q:IND=""  D
+ N IND S IND=0
+ F  S IND=$O(RETURN(IND)) Q:IND=""  D
  . S RETURN(IND)=$$GET1^DIQ(409.68,SDOE_",",IND,"I")
  S RETURN=1
  Q
@@ -11,6 +11,12 @@ GETCHLD(RETURN,SDOE) ; Get children encounters
  N SDOEC
  F SDOEC=0:0 S SDOEC=$O(^SCE("APAR",SDOE,SDOEC)) Q:'SDOEC  D
  . S RETURN(SDOEC)=""
+ . S NOD=^SCE(SDOEC,0)
+ . S RETURN(SDOEC,"DATE")=$P(NOD,U,1)
+ . S RETURN(SDOEC,"PATIENT")=$P(NOD,U,2)
+ . S RETURN(SDOEC,"SCODE")=$P(NOD,U,3)
+ . S RETURN(SDOEC,"CLINIC")=$P(NOD,U,4)
+ . S RETURN(SDOEC,"VISIT")=$P(NOD,U,5)
  Q
 DELOE(SDOE) ; Delete Outpatient Encounter
  N DA,DIK
@@ -23,7 +29,7 @@ UPDPAPT(DATA,DFN,SD) ; Update patient appointment
  F I=0:0 S I=$O(DATA(I)) Q:I=""  D
  . S FDA(2.98,IENS,I)=DATA(I)
  N ERR
- D UPDATE^DIE("","FDA","ERR")
+ D UPDATE^DIE("","FDA",,"ERR")
  Q
  ;
 UPDCAPT(DATA,SC,SD,IEN) ; Update clinic appointment
@@ -33,7 +39,7 @@ UPDCAPT(DATA,SC,SD,IEN) ; Update clinic appointment
  F I=0:0 S I=$O(DATA(I)) Q:I=""  D
  . S FDA(44.003,IENS,I)=DATA(I)
  N ERR
- D UPDATE^DIE("","FDA","ERR")
+ D UPDATE^DIE("","FDA",,"ERR")
  Q
  ;
 DELCLS(SDOE) ;Delete Classification
@@ -41,5 +47,35 @@ DELCLS(SDOE) ;Delete Classification
  S SDFL=409.42
  S DIK="^SDD("_SDFL_",",SDI=0
  F SDI=0:0 S SDI=$O(^SDD(SDFL,"AO",SDOE,SDI)) Q:'SDI  S DA=+$O(^(SDI,0)) D ^DIK
+ Q
+ ;
+GETPAPT(RETURN,DFN,SD) ; Get patient appointment
+ N APT,DIQ,DIC,DA,DR
+ S DIQ(0)="IE",DIQ="APT(",DIC="^DPT(DFN,""S"",",DA=SD,DR=".01;3;5;6;7;9;12;13;14;15;16;9.5;17;19;20;21;25;26;27;28" D EN^DIQ1
+ M RETURN=APT(2.98,SD)
+ Q
+ ;
+GETCAPT(RETURN,DFN,SD) ; Get clinic appointment
+ N CAPT,ZL,SDDA,SC,DIQ,DIC,DA,DR S SDDA=0
+ S SC=+$G(^DPT(DFN,"S",SD,0))
+ I $D(^SC(SC,"S",SD))  D
+ . S ZL=0
+ . F  S ZL=$O(^SC(SC,"S",SD,1,ZL)) Q:'ZL  D
+ . . I +^SC(SC,"S",SD,1,ZL,0)=DFN S SDDA=ZL
+ . Q
+ Q:SDDA=0
+ S DIQ="CAPT(",DIC="^SC(SC,""S"",SD,1,",DA=SDDA,DR=".01;1;3;7;8;9;30;309;302;303;304;306" D EN^DIQ1
+ M RETURN=CAPT(44.003,SDDA)
+ S RETURN(222)=SC
+ S RETURN(333)=SDDA
+ Q
+ ;
+GETPAT(RETURN,DFN) ; Get patient
+ N PAT,DIQ,DIC,DA,DR
+ S DIQ(0)="IE",DIQ="PAT(",DIC="^DPT(",DA=DFN
+ S DR=".01;.02;.03;.05;.08;.361;.323;.131;.111;.134;.112;.135;.1173;.1112;"
+ S DR=DR_".114;.115;.1172;.1171;.133;.32103;.525;.32102;.3213;.32115;.322013"
+ D EN^DIQ1
+ M RETURN=PAT(2,DFN)
  Q
  ;

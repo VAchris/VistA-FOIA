@@ -1,4 +1,4 @@
-SDAM1 ;MJK/ALB - Appt Mgt (Patient);08/01/2012
+SDAM1 ;MJK/ALB - Appt Mgt (Patient);10/02/2012
  ;;5.3;Scheduling;**149,155,193,189,445,478,466,260003**;Aug 13, 1993;Build 2
  ;
 INIT ; -- get init pat appt data
@@ -41,6 +41,7 @@ BLD1(APTS) ; -- build array
  . S X=$E(X,1,CC-1)_$E($S((CSTAT=1!(CSTAT=2)!(CSTAT=13)):" ",$G(CSTAT):"Consult",1:"        ")_BL,1,CW)_$E(X,CC+CW+1,VALMWD) K CSTAT ;SD/478
  . S Y=$P(STAT,";",3)
  . I Y'["FUTURE" S X=$E(X,1,SC-1)_$E($$LOWER(Y)_BL,1,SW)_$E(X,SC+SW+1,VALMWD)
+ . S SDATA=APTS(IND,"LAB")_U_APTS(IND,"XRAY")_U_APTS(IND,"EKG")
  . I Y["FUTURE" S X=$E(X,1,SC-1)_$E($$LOWER(Y)_$$ANC_BL,1,SW+TW+1)
  . S Y1=$S($P(STAT,";",5):$P(STAT,";",5),1:$P(STAT,";",4)),Y1=$S($P(Y1,".")=DT:$$TIME($P(Y1,".",2)),1:"")
  . S:Y1]"" X=$E(X,1,TC-1)_$E(Y1_BL,1,TW)_$E(X,TC+TW+1,VALMWD)
@@ -52,7 +53,7 @@ BLD1Q Q
 ANC() ; -- set ancillary info
  N I,Y,C
  S Y="",C=0
- F I=3:1:5 I $P(SDATA,U,I)]"" S Y=Y_" "_$P("^^Lab^XRay^EKG",U,I)_"@"_$$TIME($P($P(SDATA,U,I),".",2)),C=C+1 Q:C=2
+ F I=1:1:3 I $P(SDATA,U,I)]"" S Y=Y_" "_$P("Lab^XRay^EKG",U,I)_"@"_$$TIME($P($P(SDATA,U,I),".",2)),C=C+1 Q:C=2
  I Y]"" S Y="/"_$E(Y,2,99)
  Q Y
  ;  

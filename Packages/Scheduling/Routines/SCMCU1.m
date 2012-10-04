@@ -1,5 +1,5 @@
-SCMCU1 ;ALB/CMM - Team Information Display ;7/25/99  18:46
- ;;5.3;Scheduling;**41,177**;AUG 13, 1993
+SCMCU1 ;ALB/CMM - Team Information Display ;09/25/2012
+ ;;5.3;Scheduling;**41,177,260003**;AUG 13, 1993
  ;
  ;action on Appointment Management
  ;
@@ -15,14 +15,8 @@ SEL ;selection - getting patient
  Q
  ;
 GETPT() ;function to get patient
- I $G(VALMHDR(1))?.E1"Patient:".E Q SDFN
- N TDFN
- S DIC="^DPT(",DIC(0)="AEQM",DIC("A")="Select Patient: "
- D ^DIC
- K DIC
- I X=""!(X["^")!(+Y<0) S TDFN=0
- S TDFN=+Y
- Q TDFN
+ S Y=$$SELECT^SDMUTL("Patient")
+ Q $S(Y="^":-1,(Y<0):-1,1:+Y)
  ;
 INIT ;gather team data
  N GBL
@@ -35,8 +29,9 @@ INIT ;gather team data
  Q
  ;
 HDR ;header code
- N PTNAME
- S PTNAME=$P($G(^DPT(TDFN,0)),"^")
- S VALMHDR(2)="Patient: "_PTNAME_"     SSN: "_$P($G(^DPT(TDFN,0)),U,9)
+ N PTNAME,PAT
+ S %=$$GETPAT^SDMAPI3(.PAT,TDFN,1)
+ S PTNAME=$P(PAT("NAME"),U,1)
+ S VALMHDR(2)="Patient: "_PTNAME_"     SSN: "_$P(PAT("SOCIAL SECURITY NUMBER"),U,1)
  S VALMPGE=1 ;start at page 1
  Q

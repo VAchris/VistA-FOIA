@@ -1,4 +1,4 @@
-SDAMC ;ALB/MJK - Cancel Appt Action ; 07/25/2012  ; Compiled January 8, 2009 15:41:48
+SDAMC ;ALB/MJK - Cancel Appt Action ; 09/24/2012  ; Compiled January 8, 2009 15:41:48
  ;;5.3;Scheduling;**20,28,32,46,263,414,444,478,538,260003**;Aug 13, 1993;Build 5
  ;
 EN ; -- protocol SDAM APPT CANCEL entry pt
@@ -77,7 +77,7 @@ NOPE ;
  ;
 CHK ; -- check if status of appt permits cancelling
  N SDI S SDI=0
- F  S SDI=$O(VALMY(SDI)) Q:'SDI  I $D(^TMP("SDAMIDX",$J,SDI)) K SDAT S SDAT=^(SDI) I '$$CHKSPC^SDMAPI2(,$P(SDAT,U,2),$P(SDAT,U,3)) D
+ F  S SDI=$O(VALMY(SDI)) Q:'SDI  I $D(^TMP("SDAMIDX",$J,SDI)) K SDAT S SDAT=^(SDI) I '$$CHKSPC^SDMAPI3(,$P(SDAT,U,2),$P(SDAT,U,3)) D
  .W !,^TMP("SDAM",$J,+SDAT,0),!!,*7,"You cannot cancel this appointment."
  .K VALMY(SDI) D PAUSE^VALM1
  Q
