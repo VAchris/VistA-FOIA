@@ -1,4 +1,4 @@
-SDAPIE ;RGI/CBR - Scheduling Error provider; 09/24/2012
+SDAPIE ;RGI/CBR - Scheduling Error provider; 10/10/2012
  ;;5.3;scheduling;**260003**;08/13/93;
 ERRX(RETURN,ERRNO,TEXT,LVL) ; adds error to RETURN
  N ERRTXT,IND,ST,STR,TXT,I
@@ -76,4 +76,5 @@ APTCOTS ;;>>> It is too soon to check out this appointment.
 APTCOCN ;;>>> You cannot check out this appointment.
 APTCOAC ;;Appointment already checked out
 APTCONW ;;Appointment new encounter
+APTCOSU ;;You must have the 'SD SUPERVISOR' key to delete an appointment check out.
 APTWHEN ;;WHEN??

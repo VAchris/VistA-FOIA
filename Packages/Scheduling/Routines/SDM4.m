@@ -1,4 +1,4 @@
-SDM4 ;ALB/BOK - MAKE APPOINTMENT ; 10/01/2012  ; Compiled April 9, 2007 14:26:51
+SDM4 ;ALB/BOK - MAKE APPOINTMENT ; 10/08/2012  ; Compiled April 9, 2007 14:26:51
  ;;5.3;Scheduling;**263,273,327,394,417,496,260003**;Aug 13, 1993;Build 11
  ;
  ;09/15/2002 $N FUNCTION REMOVED AND REPLACED WITH $O - IOFO - BAY PINES - TEH
@@ -16,9 +16,9 @@ RAT ;Display rated service connected disabilities patch SD*5.3*394
  D 2^VADPT
  I '$D(PAT) S %=$$GETPAT^SDMAPI3(.PAT,DFN,1)
  W !!,"PATIENT'S SERVICE CONNECTION AND RATED DISABILITIES:"
- IF $P(PAT("SERVICE CONNECTED?"),U,2)="YES"&($P(VAEL(3),"^",2)'="") D
+ IF $P($G(PAT("SERVICE CONNECTED?")),U,2)="YES"&($P(VAEL(3),"^",2)'="") D
  .W !,"SC Percent: "_$P(VAEL(3),"^",2)_"%"
- IF $P(PAT("SERVICE CONNECTED?"),U,2)="NO"&($P(VAEL(3),"^",2)="") D
+ IF $P($G(PAT("SERVICE CONNECTED?")),U,2)="NO"&($P(VAEL(3),"^",2)="") D
  .W !,"Service Connected: No"
  ;Rated Disabilities
  N SDSER,SDRAT,SDPER,SDREC,NN,NUM,ANS,SDELIG,SDATD,SDSCFLG S (ANS,NN,NUM)=0

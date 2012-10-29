@@ -1,10 +1,10 @@
-SDM1 ;SF/GFT - MAKE APPOINTMENT ; 09/27/2012  ; Compiled March 8, 2007 14:55:24  ; Compiled May 9, 2007 13:19:18  ; Compiled August 28, 2007 12:19:08
+SDM1 ;SF/GFT - MAKE APPOINTMENT ; 10/18/2012  ; Compiled March 8, 2007 14:55:24  ; Compiled May 9, 2007 13:19:18  ; Compiled August 28, 2007 12:19:08
  ;;5.3;Scheduling;**32,167,168,80,223,263,273,408,327,478,490,446,547,260003**;Aug 13, 1993;Build 17
 1 L  Q:$D(SDXXX)  S CCXN=0 K MXOK,COV,SDPROT Q:DFN<0  S SC=+SC
  S X1=DT S SDEDT=CLN("MAX # DAYS FOR FUTURE BOOKING")
  S:$L(SDEDT)'>0 SDEDT=365
  S X2=SDEDT D C^%DTC S SDEDT=X D WRT
- I $D(^SC(SC,"SI")),$O(^("SI",0))>0 W !,*7,?8,"**** SPECIAL INSTRUCTIONS ****",! S %I=0 F %=0:1 S %I=$O(^SC(SC,"SI",%I)) Q:%I'>0  W ^(%I,0) W:% ! I '%,$O(^SC(SC,"SI",%I))>0 S POP=0 D SPIN Q:POP
+ I $D(CLN("SI")),$O(CLN("SI",0))>0 W !,*7,?8,"**** "_$$EZBLD^DIALOG(480000.026)_" ****",! S %I=0 F %=0:1 S %I=$O(CLN("SI",%I)) Q:%I'>0  W $P(CLN("SI",%I,"SPECIAL INSTRUCTIONS"),U,1) W:% ! I '%,$O(CLN("SI",%I))>0 S POP=0 D SPIN Q:POP
  G:SDMM RDTY^SDMM
  ;
 ADT S:'$D(SDW) SDW=""
@@ -35,10 +35,8 @@ ADT S:'$D(SDW) SDW=""
  G:X="M"!(X="m") MORDIS^SDM0
  I X="D"!(X="d") S X=$$REDDT() G:X>0 MORD2^SDM0 S X="" W "  ??",! G ADT
  I X?1"?".E D  G ADT
- .W !,"Enter a date/time for the appointment - PAST dates must include the YEAR"  ;SD*547 added note about past dates
- .W:$D(SD) " or a space to choose the same date/time as the patient you have just previously scheduled into this clinic"
- .W ".",!,"You may also select 'M' to display the next month's availability or"
- .W !,"'D' to specify an earlier or later date to begin the availability display."
+ . D BLD^DIALOG(480000.016,,,"HLP","FS")
+ . D MSG^DIALOG("WH",,,,"HLP")
  I X=" ",$D(SD),SD S Y=SD D AT^SDUTL W Y S Y=SD
  I $E($P(X,"@",2),1,4)?1.4"0" K %DT S X=$P(X,"@"),X=$S($L(X):X,1:"T"),%DT="XF" D ^%DT G ADT:Y'>0 S X1=Y,X2=-1 D C^%DTC S X=X_.24
  K %DT S %DT="TXEF" D ^%DT
@@ -57,14 +55,14 @@ MAKE(DFN,SC,SD,TYP,STYP,SL,SRT,LVL) ; Make appointmemnt
  . . S OV=$$OVB($P(ERR(0),U,2),TXT1) I OV=2 G 1
  . . I OV=1 D MAKE(DFN,SC,SD,TYP,STYP,SL,.SDSRTY,$P(ERR(0),U,3)-1)
  Q:ERR=0
- I $P(CLN("VARIABLE APP'NTMENT LENGTH"),U)="V" D LEN
+ I $P(CLN("VARIABLE APP'NTMENT LENGTH"),U)="V" D LEN Q:U=S
  I $D(SDSRTY(0)) S SDX=$$CONF^SDM1A(.SDSRTY,.SDSRFU,DFN,SD,SC) W !
  D ORD
- S %=$$MAKE^SDMAPI2(.ERR,DFN,SC,SD,TYP,STYP,.SL,$P(SDX,U,2),.OTHR,.CIO,.LAB,.XRAY,.EKG,.LVL)
+ S %=$$MAKE^SDMAPI2(.ERR,DFN,SC,SD,TYP,STYP,.SL,$P(SDX,U,2),.OTHR,.CIO,.LAB,.XRAY,.EKG,.RQXRAY,.CNSLTLNK,.LVL)
  D CHIO^SDAMEVT(SD,DFN,SC)
  Q
  ;
-LEN S SL=$P(CLN("LENGTH OF APP'T"),U) I $P(CLN("LENGTH OF APP'T"),U)]"" W !,"LENGTH OF APPOINTMENT (IN MINUTES): ",$P(CLN("LENGTH OF APP'T"),U),"// " R S:DTIME I S]"" G:$L(S)>3 LEN Q:U[S  S POP=0 D L G LEN:POP S SL=S Q
+LEN S SL=$P(CLN("LENGTH OF APP'T"),U) I $P(CLN("LENGTH OF APP'T"),U)]"" W !,$$EZBLD^DIALOG(480000.023),$P(CLN("LENGTH OF APP'T"),U),"// " R S:DTIME I S]"" G:$L(S)>3 LEN Q:U[S  S POP=0 D L G LEN:POP S SL=S Q
 OVB(TXT,TXT1) ;
 OVB1 ;
  S %=2 W *7,!,TXT,TXT1 D YN^DICN
@@ -72,33 +70,33 @@ OVB1 ;
  Q %
  ;
 ORD ;
- S %=2 W !,"WANT PATIENT NOTIFIED OF LAB,X-RAY, OR EKG STOPS"
- D YN^DICN I '% W !,"  Enter YES to notify patient on appt. letter of LAB, X-RAY, or EKG stops" G ORD
+ S %=2 W !,$$EZBLD^DIALOG(480000.017)
+ D YN^DICN I '% W !,?2,$$EZBLD^DIALOG(480000.018) G ORD
  I '(%-1) D ORDY^SDM3
 OTHER ;
- R !,"  OTHER INFO: ",D:DTIME
- I D["^" W !,*7,"'^' not allowed - hit return if no 'OTHER INFO' is to be entered" G OTHER
+ W !,$$EZBLD^DIALOG(480000.019) R D:DTIME
+ I D["^" W !,*7,$$EZBLD^DIALOG(480000.02) G OTHER
  S TMPD=D I $L(D)>150 D MSG^SDMM G OTHER ;SD/478
- I D]"",D?."?"!(D'?.ANP) W "  ENTER LAB, SCAN, ETC." G OTHER
+ I D]"",D?."?"!(D'?.ANP) W $$EZBLD^DIALOG(480000.021) G OTHER
  ;S $P(^(0),"^",4)=D
  S OTHR=D
- D:$D(TMP) LINK^SDCNSLT(SC,SDY,SD,CNSLTLNK) ;SD/478
- D:$D(TMP) EDITCS^SDCNSLT(SD,TMPD,TMPYCLNC,CNSLTLNK) ;SD/478
  K TMP  ;SD/478
-XR I $S('$D(^SC(SC,"RAD")):1,^("RAD")="Y":0,^("RAD")=1:0,1:1) S %=2 W !,"WANT PREVIOUS X-RAY RESULTS SENT TO CLINIC" D YN^DICN G:'% HXR I '(%-1) S ^SC("ARAD",SC,SD,DFN)=""
+XR ;
+ S:$D(CLN("REQUIRE X-RAY FILMS?")) RQ=$P(CLN("REQUIRE X-RAY FILMS?"),U,1)
+ I $S('$D(RQ):1,RQ="Y":0,RQ=1:0,1:1) S %=2 W !,$$EZBLD^DIALOG(480000.022) D YN^DICN G:'% HXR I '(%-1) S RQXRAY=1
  Q
-HXR W !,"  Enter YES to have previous XRAY results sent to the clinic" G XR
+HXR W !,?2,$$EZBLD^DIALOG(480000.024) G XR
  Q
 WRT W !,$P(CLN("LENGTH OF APP'T"),U)," MINUTE APPOINTMENTS "
  W $S($P(CLN("VARIABLE APP'NTMENT LENGTH"),U)["V":"(VARIABLE LENGTH)",1:"") Q
  ;
 L S SDSL=$S($G(CLN("DISPLAY INCREMENTS PER HOUR"))]"":60/$G(CLN("DISPLAY INCREMENTS PER HOUR")),1:"") Q:'SDSL
- I S\(SDSL)*(SDSL)'=S W *7,!,"Appt. length must = or be a multiple of the increment minutes per hour (",SDSL,")",! S POP=1
+ I S\(SDSL)*(SDSL)'=S W *7,!,$$EZBLD^DIALOG(480000.025,SDSL),! S POP=1
  Q
  ;
-SPIN W !,"There are more special instructions. Do you want to display them"
+SPIN W !,$$EZBLD^DIALOG(480000.027)
  S %=2 D YN^DICN
- I '% W !,"Enter Y to see the remaining special instructions, or N if you don't wish to see them" G SPIN
+ I '% W !,$$EZBLD^DIALOG(480000.027) G SPIN
  I (%-1) S POP=1 Q
  W !,^SC(SC,"SI",%I,0),! Q
  ;

@@ -1,5 +1,5 @@
-SDCO3 ;ALB/RMO - Provider - Check Out;08 DEC 1992 4:05 pm
- ;;5.3;Scheduling;**28,27,44,67,71,132,466**;08/13/93;Build 2
+SDCO3 ;ALB/RMO - Provider - Check Out; 10/10/2012
+ ;;5.3;Scheduling;**28,27,44,67,71,132,466,260003**;08/13/93;Build 2
  ;
 EN ;Entry point for SDCO PROVIDER protocol
  ; Input  -- SDOE
@@ -58,8 +58,9 @@ EDITOK(SDOE,SDMODE) ; -- ok to edit?
  ; returned:  1 -- yes, it's ok to edit or delete SDOE entry
  ;            0 -- no, cannot not change SDOE entry
  ;
- N DIR,SDOK
- S SDOK=$$NEW^SDPCE($P($G(^SCE(+$G(SDOE),0)),U))
+ N DIR,SDOK,OE
+ S %=$$GETOE^SDMAPI4(.OE,SDOE)
+ S SDOK=$$NEW^SDPCE($G(OE("DATE")))
  IF 'SDOK,SDMODE D OLDMSG
 EDITOKQ Q SDOK
  ;

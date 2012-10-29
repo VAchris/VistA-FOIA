@@ -1,10 +1,11 @@
-SDMDAL1 ;RGI/CBR - APPOINTMENT API; 09/19/2012
+SDMDAL1 ;RGI/CBR - APPOINTMENT API; 10/26/2012
  ;;5.3;scheduling;**260003**;08/13/93;
 GETCLN(RETURN,CLN,INT,EXT,REZ) ; Get clinic detail
  N FILE,SFILES,FLDS
  S FILE=44
  S FLDS("*")=""
  S SFILES("2501")="",SFILES("2501","N")="PRIVILEGED USER",SFILES("2501","F")="44.04"
+ S SFILES("1910")="",SFILES("1910","N")="SI",SFILES("1910","F")="44.03"
  D GETREC^SDMDAL(.RETURN,CLN,FILE,.FLDS,.SFILES,$G(INT),$G(EXT),$G(REZ))
  Q
  ;
@@ -69,21 +70,25 @@ GETSCAP(RETURN,SC,DFN,SD) ; Get clinic appointment
  I $D(^SC(SC,"S",SD))  D
  . S ZL=0
  . F  S ZL=$O(^SC(SC,"S",SD,1,ZL)) Q:'ZL  D
- . . I '$D(^SC(SC,"S",SD,1,ZL,0)) D FLEN1 Q
+ . . I '$D(^SC(SC,"S",SD,1,ZL,0)) Q
  . . I +^SC(SC,"S",SD,1,ZL,0)=DFN  D
  . . . M RETURN=^SC(SC,"S",SD,1,ZL)
  . . . S RETURN=ZL
  . Q
  Q
  ;
-FLEN1 ;
- N DA,DIK
- Q:'$D(^SC(SC,"S",SD,1,ZL,"C"))
- S DA(2)=SC,DA(1)=NDT,DA=ZL,DIK="^SC("_DA(2)_",""S"","_DA(1)_",1," D ^DIK
+GETCAPT(RETURN,SC,SD,IFN,FLAG) ; Get clinic appointment by IFN
+ N CAPT
+ S DIQ="CAPT(",DIC="^SC(SC,""S"",SD,1,",DIQ(0)=$G(FLAG)
+ S DA=IFN,DR=".01;1;3;7;8;9;30;309;302;303;304;306;688"
+ D EN^DIQ1
+ M RETURN=CAPT(44.003,IFN)
+ S RETURN(222)=SC
+ S RETURN(333)=IFN
  Q
  ;
 LOCKST(SC,SD) ; Lock availability node
- L +^SC(SC,"ST",$P(SD,"."),1):$S($G(DILOCKTM)>0:DILOCKTM,1:5) Q:'$T 0
+ L +^SC(SC,"ST",$P(SD,"."),1):5 Q:'$T 0
  Q 1
  ;
 UNLCKST(SC,SD) ; Lock availability node
@@ -91,7 +96,7 @@ UNLCKST(SC,SD) ; Lock availability node
  Q
  ;
 LOCKS(SC,SD) ; Lock clinic date node
- L +^SC(SC,"S",$P(SD,"."),1):$S($G(DILOCKTM)>0:DILOCKTM,1:5) Q:'$T 0
+ L +^SC(SC,"S",$P(SD,"."),1):5 Q:'$T 0
  Q 1
  ;
 UNLCKS(SC,SD) ; Unlock clinic date node
@@ -102,19 +107,23 @@ SETST(SC,SD,S) ; Set availability
  S ^SC(SC,"ST",$P(SD,".",1),1)=S
  Q
  ;
-MAKE(SC,SD,DFN,LEN,SM,USR,OTHR) ; Make clinic appointment
+MAKE(SC,SD,DFN,LEN,SM,USR,OTHR,RQXRAY) ; Make clinic appointment
  N ERR,FDA,IENS
- S ^SC(SC,"S",SD,0)=SD
- S:'$D(^SC(SC,"S",0)) ^(0)="^44.001DA^^"
- S:'$D(^(0)) ^(0)="^44.003PA^^"
- S IENS="?+1,"_SD_","_SC_","
+ S IENS="+2,"_SC_","
+ S IENS(2)=+SD
+ S FDA(44.001,IENS,.01)=+SD
+ D UPDATE^DIE("","FDA","IENS","ERR")
+ S SD=$G(IENS(2))
+ K FDA,IENS
+ S IENS="?+1,"_+SD_","_SC_","
  S FDA(44.003,IENS,.01)=DFN
  S FDA(44.003,IENS,1)=LEN
  S FDA(44.003,IENS,3)=$G(OTHR)
  S FDA(44.003,IENS,7)=USR
  S FDA(44.003,IENS,8)=$P($$NOW^XLFDT,".")
  S:$G(SM) FDA(44.003,IENS,9)="O"
- D UPDATE^DIE("","FDA","","ERR") Q
+ I $D(RQXRAY),RQXRAY>0 S ^SC("ARAD",SC,SD,DFN)=""
+ D UPDATE^DIE("","FDA","IENS","ERR")
  Q
  ;
 CANCEL(SC,SD,DFN,CIFN) ; Kill clinic appointment
@@ -149,14 +158,16 @@ GETDAYA(RETURN,SC,SD) ; Get all day appointments
  N IND,I,D
  S I=$P(SD,".",1)
  F D=I-.01:0 S D=$O(^SC(SC,"S",D)) Q:$P(D,".",1)-I  D
- . F %=0:0 S %=$O(^SC(SC,"S",D,1,%)) Q:%'>0  D
- . . S RETURN(%,"STATUS")=$P(^(%,0),U,9)
+ . S %=0
+ . F  S %=$O(^SC(SC,"S",D,1,%)) Q:%'>0  D
+ . . Q:'$D(^SC(SC,"S",D,1,%,0))
+ . . S RETURN(%,"STATUS")=$P(^(0),U,9)
  . . S RETURN(%,"OB")=$D(^("OB"))
  Q
  ;
 LSTCAPTS(RETURN,SC,SDBEG,SDEND) ; 
  N SDT,SDDA,CNT,APT,SDATA,CNSTLNK
- S CNT=0 S:'$D(SDBEG) SDBEG=DT S:'$D(SDEND) SDEND=99999999
+ S CNT=0 S:'$D(SDBEG) SDBEG=1 S:'$D(SDEND) SDEND=99999999
  F SDT=SDBEG:0 S SDT=$O(^SC(SC,"S",SDT)) Q:'SDT!($P(SDT,".",1)>SDEND)  D
  . F SDDA=0:0 S SDDA=$O(^SC(SC,"S",SDT,1,SDDA)) Q:'SDDA  D
  . . S CNSTLNK=$P($G(^SC(SC,"S",SDT,1,SDDA,"CONS")),U)
@@ -220,7 +231,6 @@ ADDPATT(DATA,SC,SD) ; Add day pattern
  F I=0:0 S I=$O(DATA(I)) Q:I=""  D
  . S FDA(44.005,IENS,I)=DATA(I)
  D UPDATE^DIE("","FDA","IENS","ERR")
- ZW ERR
  Q
  ;
 LSTAENC(RETURN,SEARCH,START,NUMBER) ; Returns active encounters.

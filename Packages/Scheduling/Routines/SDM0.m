@@ -1,4 +1,4 @@
-SDM0 ;SF/GFT - MAKE APPOINTMENT ; 09/19/2012  5:20 PM
+SDM0 ;SF/GFT - MAKE APPOINTMENT ; 10/18/2012  5:20 PM
  ;;5.3;Scheduling;**140,167,206,186,223,237,241,384,334,547,260003**;Aug 13, 1993;Build 17
  I $D(SDXXX) S SDOK=1 Q
  N SDSRTY,SDDATE,SDSDATE,SDSRFU,SDDMAX,SDONCE
@@ -6,9 +6,9 @@ SDM0 ;SF/GFT - MAKE APPOINTMENT ; 09/19/2012  5:20 PM
 M N SDHX,SDXF,SDXD
  Q:'$$SRTY(.SDSRTY)  S:SDSRTY SDDATE=DT
  ;Calculate appointment follow-up indicator
- W !!,"Calculating follow-up status"
+ W:SDSRTY !!,$$EZBLD^DIALOG(480000.006)
  ;Determine maximum days for scheduling
- S SDMAX(1)=$P($G(^SC(+SC,"SDP")),U,2) S:'SDMAX(1) SDMAX(1)=365
+ S SDMAX(1)=$P(CLN("MAX # DAYS FOR FUTURE BOOKING"),U,1) S:SDMAX(1)']"" SDMAX(1)=365
  S (SDMAX,SDDMAX)=$$FMADD^XLFDT(DT,SDMAX(1))
  ;Prompt for desired date
  Q:'$$DDATE(.SDDATE,SDSRTY,.SDMAX)
@@ -103,8 +103,8 @@ SRTY(SDSRTY) ;Prompt for scheduling request type
  I $G(SDMM)=1 S SDSRTY="M" Q 1  ;multiple appointment booking
  N DIR,DTOUT,DUOUT
  S DIR(0)="Y"
- S DIR("A")="IS THIS A 'NEXT AVAILABLE' APPOINTMENT REQUEST"
- S DIR("?")="Answer 'yes' if scheduling to the next available appointment is desired."
+ S DIR("A")=$$EZBLD^DIALOG(480000.007)
+ S DIR("?")=$$EZBLD^DIALOG(480000.008)
  W ! D ^DIR I $D(DTOUT)!$D(DUOUT) Q 0
  S SDSRTY=Y,SDSRTY(0)=$$TXRT^SDM1A(.SDSRTY) Q 1
  ;
@@ -140,31 +140,18 @@ DDATE(SDDATE,SDSRTY,SDMAX) ;Desired date selection
  ;Output: '1' for success, otherwise '0'
  ;
  Q:SDSRTY 1
- W !!?2,"Select one of the following:",!
- W !?5,"'F'",?20,"for First available following a specified date"
- W !?5,"Date",?20,"(or date computation such as 'T+2M') for a desired date"
- I DFN>0 W !?5,"Date/time",?20,"to schedule a specific appointment - Note: PAST dates",!?20,"must include the Year in the input."  ;added note SD*5.3*547
- W !?5,"'?'",?20,"for detailed help"
+ N MSG
+ D BLD^DIALOG(480000.01,,,"MSG","FS")
+ D MSG^DIALOG("WM",,,,"MSG")
 DASK N DIR,X,Y,SDX,DTOUT,DUOUT
  ;
  ;BP OIFO/TEH PATCH SD*5.3*384 ; SD*5.3*547 added note to help text
  ;
  S DIR(0)="F^1:30"
- S DIR("A")="ENTER THE DATE DESIRED FOR THIS APPOINTMENT"
- S DIR("?",1)="  Enter the date that is desired for this appointment."
- S DIR("?",2)="  NOTE: PAST dates must include the Year in the input."
- S DIR("?",3)=""
- S DIR("?",4)="  You may enter 'F' to find the first available slot after a specified date."
- S DIR("?",5)="  You will be prompted for begin and end dates for this search."
- S DIR("?",6)=""
- S DIR("?",7)="  A date may be entered to begin the display of clinic availability at the"
- I DFN<1 S DIR("?")="  requested date."
- I DFN>0 D
- .S DIR("?",8)="  requested date."
- .S DIR("?",9)=""
- .S DIR("?",10)="  The entry of a date/time will result in the scheduling of an appointment at"
- .S DIR("?")="  that time, if possible."
- .Q
+ S DIR("A")=$$EZBLD^DIALOG(480000.009)
+ N HLP
+ D BLD^DIALOG(480000.011,,,"HLP","")
+ S IND=0 F  S IND=$O(HLP(IND)) Q:'IND  S:IND>1 DIR("?",IND-1)=DIR("?") S DIR("?")=HLP(IND)
  W ! D ^DIR Q:$D(DTOUT)!$D(DUOUT) 0
  I Y=" " S SDX=$G(^DISV(DUZ_U_+SC)) I SDX?7N S (X,Y)=SDX
  I $L(Y)=1,"fF"[Y D  Q 1
@@ -178,7 +165,7 @@ DASK N DIR,X,Y,SDX,DTOUT,DUOUT
  I DFN<1 S SDDATE=SDDATE\1
  I DFN>0,Y'<DT,(Y\1)>SDMAX D  G DASK
  .W !,$C(7)
- .W "Scheduling cannot be more than ",SDMAX(1)," days in the future"
+ .W $$EZBLD^DIALOG(480000.012,SDMAX(1))
  .Q
  Q 1
  ;
@@ -206,8 +193,14 @@ DWWRT ;added SD*5.3*547
  Q
  ;
 1 S SDNEXT="",SDCT=0 G RD^SDMULT
-DT1 S FND=0,%DT(0)=-SDMAX,%DT="AEF",%DT("A")="  START SEARCH FOR NEXT AVAILABLE FROM WHAT DATE: " D ^%DT K %DT G:"^"[X 1:$S('$D(SDNEXT):1,'SDNEXT:1,1:0),END^SDMULT0 G:Y<0 DT S (SDDATE,SDSTRTDT)=+Y
-LIM W !,"  ENTER LATEST DATE TO CHECK FOR 1ST AVAILABLE SLOT: " S Y=SDMAX D DT^DIQ R "// ",X:DTIME G:X["^"!'($T) END^SDMULT0 I X']"" G OVR^SDMULT0
- I X?.E1"?" W !,"  The latest date for future bookings for ",$P(SDC(1),"^",2)," is: " S Y=SDMAX D DTS^SDUTL W Y,!,"  If you enter a date here, it must be less than this date to further limit the",!,"  search" G LIM
+DT1 S FND=0,%DT(0)=-SDMAX,%DT="AEF",%DT("A")=$$EZBLD^DIALOG(480000.013) D ^%DT K %DT G:"^"[X 1:$S('$D(SDNEXT):1,'SDNEXT:1,1:0),END^SDMULT0 G:Y<0 DT S (SDDATE,SDSTRTDT)=+Y
+LIM W !,$$EZBLD^DIALOG(480000.014) S Y=SDMAX D DT^DIQ R "// ",X:DTIME G:X["^"!'($T) END^SDMULT0 I X']"" G OVR^SDMULT0
+ I X?.E1"?" D
+ . N HLP,PRM
+ . S Y=SDMAX D DTS^SDUTL
+ . S PRM(1)=$P($G(CLN("NAME")),U,2),PRM(2)=Y
+ . D BLD^DIALOG(480000.015,.PRM,,"HLP","FS")
+ . D MSG^DIALOG("WH",,,2,"HLP")
+ I X?.E1"?" G LIM
  S %DT="EF",%DT(0)=-SDMAX D ^%DT K %DT G:Y<0!(Y<SDSTRTDT) LIM S:Y>0 (SDDMAX,SDMAX)=+Y
  G OVR^SDMULT0

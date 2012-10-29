@@ -1,4 +1,4 @@
-SDMDAL3 ;RGI/CBR - APPOINTMENT API; 09/19/2012
+SDMDAL3 ;RGI/CBR - APPOINTMENT API; 10/26/2012
  ;;5.3;scheduling;**260003**;08/13/93;
 GETPATS(RETURN,SEARCH,START,NUMBER) ; Get patients
  N FILE,FIELDS,RET,SCR,INDX
@@ -30,10 +30,10 @@ LSTETNS(RETURN,SEARCH,START,NUMBER) ; Return ethnicity information.
  ;
 SETETN(PAT,ETN) ; Set patient ethnicity.
  N IENS,FDA,MSG
- S IENS=$O(^DPT(PAT,.06,0))_","_PAT_","
+ S IENS="?+1,"_PAT_","
  S FDA(2.06,IENS,".01")=ETN
  S FDA(2.06,IENS,".02")=1
- D FILE^DIE("","FDA","MSG")
+ D UPDATE^DIE("","FDA","IENS","MSG")
  Q
  ;
 LSTRACES(RETURN,SEARCH,START,NUMBER) ; Return races.
@@ -60,15 +60,9 @@ ADDRACE(PAT,RACE) ; Set patient race.
  D UPDATE^DIE("","FDA","IENS","MSG")
  Q
  ;
-GETAPPS(RETURN,DFN,SD) ; Get day appointment
- N S
- F S=$P(SD,"."):0 S S=+$O(^DPT(DFN,"S",S)) Q:$P(S,".")-($P(SD,"."))  D
- . S RETURN(SD)=+^(S,0)
- Q
- ;
 MAKE(DFN,SD,SC,TYPE,STYP,STAT,RSN,USR,DT,SRT,NAAI,LAB,XRAY,EKG) ; Make patient appointment
  N ERR,FDA,IENS
- I $D(^DPT(DFN,"S",SD,0)),$P(^(0),U,2)["C" D
+ I $D(^DPT(DFN,"S",+SD,0)),$P(^(0),U,2)["C" D
  . S IENS=SD_","_DFN_","
  . S FDA(2.98,IENS,".01")=SC
  . S FDA(2.98,IENS,"3")="@"
@@ -76,10 +70,10 @@ MAKE(DFN,SD,SC,TYPE,STYP,STAT,RSN,USR,DT,SRT,NAAI,LAB,XRAY,EKG) ; Make patient a
  . S FDA(2.98,IENS,"9.5")=$G(TYPE)
  . S FDA(2.98,IENS,"17")="@"
  . S FDA(2.98,IENS,"20")=DT
- . D FILE^DIE("","FDA",,"ERR")
+ . D FILE^DIE("","FDA","ERR")
  E  D
  . S IENS="?+2,"_DFN_","
- . S IENS(2)=SD
+ . S IENS(2)=+SD
  . S FDA(2.98,IENS,.01)=SC
  . S FDA(2.98,IENS,"3")=STAT
  . S FDA(2.98,IENS,"5")=$G(LAB)
@@ -108,9 +102,10 @@ CANCEL(RETURN,DFN,SD,TYP,RSN,RMK,CDT,USR,OUSR,ODT) ; Cancel appointment.
  D FILE^DIE("","FDA","RETURN")
  Q
  ;
-GETXUS(RETURN,USR) ; Get user access
- S:$D(^XUSEC("SDOB",USR)) RETURN("SDOB")=^XUSEC("SDOB",USR)
- S:$D(^XUSEC("SDMOB",USR)) RETURN("SDMOB")=^XUSEC("SDMOB",USR)
+GETXUS(RETURN,KEYS,USR) ; Get user access
+ N KEY
+ K RETURN S KEY=""
+ F  S KEY=$O(KEYS(KEY)) Q:KEY=""  S:$D(^XUSEC(KEY,USR)) RETURN(KEY)=""
  Q
  ;
 GETCENRL(RETURN,DFN,SC) ; Get clinic enrolls
