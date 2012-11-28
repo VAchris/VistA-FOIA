@@ -17,15 +17,10 @@ INIT ; -- init variables and list array
  Q
  ;
 HELP ; -- help code
- N X
- W !!?4,"You may take a variety of actions from this prompt.  To update"
- W !?4,"the ICD Code assigned to a problem, you may choose to search"
- W !?4,"either the ICD Diagnosis file or the Clinical Lexicon for a"
- W !?4,"match; the code of the entry you select will be assigned to the"
- W !?4,"current problem in the list.  If you need more information on a"
- W !?4,"problem, select Detailed Display.  To see a listing of"
- W !?4,"actions that facilitate navigating the list, enter '??'."
- W !!,"Press <return> to continue ... " R X:DTIME
+ N X,MSG
+ D BLD^DIALOG(1250000.142,,,"MSG")
+ D EN^DDIOL(.MSG)
+ R X:DTIME
  S VALMSG=$$MSG^GMPLX,VALMBCK=$S(VALMCC:"",1:"R")
  Q
  ;
@@ -44,13 +39,15 @@ EDQ D KILL^GMPLX S VALMSG=$$MSG^GMPLX
  Q
  ;
 ICD(NUM,IFN) ; -- search ICD Diagnosis file #80
- N X,Y,DIC,DIR,OLD,NEW,LCNT,RET
+ N X,Y,DIC,DIR,OLD,NEW,LCNT,RET,PARM
  W !,IFN,!
  D FULL^VALM1 S VALMBCK="R" W !!
  S %=$$DIAG^GMPLAPI4(.OLD,IFN)
- S DIR(0)="PAO^ICD9(:QEM",DIR("A")="Enter ICD CODE or DESCRIPTION: "
- S DIR("A",1)="Problem #"_NUM_": "_$$PROBTEXT^GMPLX(IFN)
- S DIR("?")="Enter a new code number or a brief free text description on which to search",DIR("B")=$P(OLD,U,2)
+ S DIR(0)="PAO^ICD9(:QEM"
+ S PARM(1)=NUM,PARM(2)=$$PROBTEXT^GMPLX(IFN)
+ D BLD^DIALOG(1250000.143,.PARM,,"DIR(""A"")")
+ D BLD^DIALOG(1250000.144,,,"DIR(""?"")")
+ S DIR("B")=$P(OLD,U,2)
  ; Added for Code Set Versioning (CSV) - screen allows ONLY active codes
  S DIR("S")="I +($$STATCHK^ICDAPIU($$CODEC^ICDCODE(+($G(Y))),DT))>0"
  D ^DIR I $D(DTOUT)!($D(DUOUT)) S GMPQUIT=1 Q

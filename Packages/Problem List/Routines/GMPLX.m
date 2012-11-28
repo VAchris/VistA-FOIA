@@ -20,7 +20,7 @@ SEARCH(X,Y,PROMPT,UNRES,VIEW) ; Search Lexicon for Problem X
  N DIC
  S:'$L($G(VIEW)) VIEW="PL1"
  D CONFIG^LEXSET("GMPL",VIEW,DT)
- S DIC("A")=$S($L($G(PROMPT)):PROMPT,1:"Select PROBLEM: ")
+ S DIC("A")=$S($L($G(PROMPT)):PROMPT,1:$$EZBLD^DIALOG(1250000.482))
  S DIC="^LEX(757.01,",DIC(0)=$S('$L($G(X)):"A",1:"")_"EQM"
  S:'$G(UNRES) LEXUN=0 D ^DIC S:+Y>1 X=$P(Y,U,2)
  Q
@@ -68,48 +68,54 @@ WRQ ;   Quit Wrap
  Q
  ;
 SEL(HELP) ; Select List of Problems
- N X,Y,DIR,MAX S MAX=+$G(^TMP("GMPL",$J,0)) I MAX'>0 Q "^"
- S DIR(0)="LAO^1:"_MAX,DIR("A")="Select Problem(s)"
+ N X,Y,DIR,MAX,MSG S MAX=+$G(^TMP("GMPL",$J,0)) I MAX'>0 Q "^"
+ S DIR(0)="LAO^1:"_MAX,DIR("A")=$$EZBLD^DIALOG(1250000.483)
  S:MAX>1 DIR("A")=DIR("A")_" (1-"_MAX_"): "
  S:MAX'>1 DIR("A")=DIR("A")_": ",DIR("B")=1
- S DIR("?")="Enter the problems you wish to "
- S DIR("?")=DIR("?")_$S($L(HELP):HELP,1:"act on")_", as a range or list of numbers"
+ S MSG=$S($L(HELP):1250000.484,1:1250000.485)
+ D BLD^DIALOG(MSG,$G(HELP),,"DIR(""?"")")
  D ^DIR I $D(DTOUT)!(X="") S Y="^"
  Q Y
  ;
 SEL1(HELP) ; Select 1 Problem
- N X,Y,DIR,MAX S MAX=+$G(^TMP("GMPL",$J,0)) I MAX'>0 Q "^"
- S DIR(0)="NAO^1:"_MAX_":0",DIR("A")="Select Problem"
+ N X,Y,DIR,MAX,MSG S MAX=+$G(^TMP("GMPL",$J,0)) I MAX'>0 Q "^"
+ S DIR(0)="NAO^1:"_MAX_":0",DIR("A")=$$EZBLD^DIALOG(1250000.486)
  S:MAX>1 DIR("A")=DIR("A")_" (1-"_MAX_"): "
  S:MAX'>1 DIR("A")=DIR("A")_": ",DIR("B")=1
- S DIR("?")="Enter the number of the problem you wish to "
- S DIR("?")=DIR("?")_$S($L(HELP):HELP,1:"act on")
+ S MSG=$S($L(HELP):1250000.487,1:1250000.488)
+ D BLD^DIALOG(MSG,$G(HELP),,"DIR(""?"")")
  D ^DIR I $D(DTOUT)!(X="") S Y="^"
  Q Y
  ;
 DUPLOK(IFN) ; Ask to Duplicate Problem
- N DIR,X,Y,DATE,PRB,%,PROV
+ N DIR,X,Y,DATE,PRB,%,PROV,MSGID,MSG
  S DIR(0)="YA"
  S %=$$DETAIL^GMPLAPI2(.PRB,IFN)
- S DIR("A")="Are you sure you want to continue? ",DIR("B")="NO"
- S DIR("?",1)="Enter YES if you want to duplicate this problem on this patient's list;",DIR("?")="press <return> to re-enter the problem name."
- W $C(7),!!,">>>  "_$$PROBTEXT(IFN),!?5,"is already an "
- W $S($P(PRB(.12),U)="I":"IN",1:"")_"ACTIVE problem on this patient's list!",!
- S PROV=+PRB(1.05) W:PROV !?5,"Provider: "_$P(PRB(1.05),U,2)_" ("_$P($$SERVICE^GMPLEXT(PROV),U,2)_")"
- I $P(PRB(.12),U)="A" W !?8,"Onset: " S DATE=$P(PRB(.13),U)
- I $P(PRB(.12),U)="I" W !?5,"Resolved: " S DATE=$P(PRB(1.07),U)
- W $S(DATE>0:$$FMTE^XLFDT(DATE),1:"unspecified"),!
+ S DIR("A")=$$EZBLD^DIALOG(1250000.489),DIR("B")="NO"
+ D BLD^DIALOG(1250000.490,,,"DIR(""?"")")
+ D EN^DDIOL($C(7),,"?0")
+ S MSGID=$S($P(PRB(.12),U)="I":1250000.491,1:1250000.492)
+ D BLD^DIALOG(MSGID,$$PROBTEXT(IFN),,"MSG")
+ D EN^DDIOL(.MSG)
+ D EN^DDIOL("")
+ S PROV=+PRB(1.05)
+ D:PROV EN^DDIOL($$EZBLD^DIALOG(1250000.165,$P(PRB(1.05),U,2)_" ("_$P($$SERVICE^GMPLEXT(PROV),U,2)_")"),,"!?5")
+ I $P(PRB(.12),U)="A" D EN^DDIOL($$EZBLD^DIALOG(1250000.152),,"!?8") S DATE=$P(PRB(.13),U)
+ I $P(PRB(.12),U)="I" D EN^DDIOL($$EZBLD^DIALOG(1250000.493),,"!?5") S DATE=$P(PRB(1.07),U)
+ D EN^DDIOL($S(DATE>0:$$FMTE^XLFDT(DATE),1:$$EZBLD^DIALOG(1250000.494)),,"?0")
+ D EN^DDIOL("")
  D ^DIR W !
  Q +Y
  ;
 LOCKED() ; Returns Message that Problem is Locked
- Q "This problem is currently being edited by another user!"
+ Q $$EZBLD^DIALOG(1250000.510)
  ;
 SURE() ; Ask to Delete 
  ;   Returns 1 if YES, else 0
  N DIR,X,Y S DIR(0)="YA",DIR("B")="NO"
- S DIR("?")="Enter YES to remove this value or NO to leave it unchanged."
- S DIR("A")="Are you sure you want to remove this value? " D ^DIR
+ D BLD^DIALOG(1250000.495,,,"DIR(""?"")")
+ D BLD^DIALOG(1250000.496,,,"DIR(""A"")")
+ D ^DIR
  Q +Y
  ;
 EXTDT(DATE) ; Formats Date into MM/DD/YY
@@ -119,7 +125,7 @@ EXTDT(DATE) ; Formats Date into MM/DD/YY
  Q X
  ;
 MSG() ; List Manager Message Bar
- Q "+ Next Screen  - Prev Screen  ?? More actions"
+ Q $$EZBLD^DIALOG(1250000.497)
  ;
 KILL ; Clean-Up Variables
  K X,Y,DIC,DIE,DR,DA,DUOUT,DTOUT,GMPQUIT,GMPRT,GMPSAVED,GMPIFN,GMPLNO,GMPLNUM,GMPLSEL,GMPREBLD,GMPI,GMPLSLST,GMPLJUMP

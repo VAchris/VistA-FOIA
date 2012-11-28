@@ -20,15 +20,15 @@ EN ; Print/Display (Main)
  N DIR,X,Y S VALMBCK=$S(VALMCC:"",1:"R") W !
  I '(($L(GMPLVIEW("ACT")))!(GMPLVIEW("PROV"))!($L(GMPLVIEW("VIEW"),"/")>2)) S Y="A" G EN1
  S DIR(0)="SAOM^C:CURRENT VIEW;A:ALL PROBLEMS;"
- S DIR("A")="Print (C)urrently displayed problems only, or include (A)ll problems? "
- S DIR("?",1)="Enter C to print a copy of your currently displayed view"
- S DIR("?",2)="of this patient's list; to print a complete list of all"
- S DIR("?",3)="active and inactive problems, which may be included in"
- S DIR("?")="the patient's chart, select A."
+ D BLD^DIALOG(1250000.407,,,"DIR(""A"")")
+ D BLD^DIALOG(1250000.408,,,"DIR(""?"")")
  D ^DIR G:$D(DTOUT)!($D(DUOUT))!(Y="") ENQ
 EN1 ;   Print View
  W ! D @$S(Y="C":"LIST",1:"VAF")
- I GMPRT'>0 W !!,"No problems found.",!,$C(7) H 1 G ENQ
+ I GMPRT'>0 D  G ENQ
+ . D EN^DDIOL($$EZBLD^DIALOG(1250000.409),,"!!")
+ . D EN^DDIOL($C(7))
+ . H 1
  D DEVICE G:$D(GMPQUIT) ENQ
  D CLEAR^VALM1,PRT S VALMBCK="R"
 ENQ ;   Quit Print/Display
@@ -47,7 +47,7 @@ VAF ; Build Chart Copy
  ;
 LIST ; Build Current View
  S GMPLCURR=1,GMPRT=0 Q:+$G(GMPCOUNT)'>0  N I,IFN
- W !,"One moment, please ..."
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.410))
  F I=0:0 S I=$O(^TMP("GMPLIDX",$J,I)) Q:I'>0  D
  . S IFN=$P($G(^TMP("GMPLIDX",$J,I)),U,2) Q:IFN'>0
  . S GMPRT=GMPRT+1,GMPRT(I)=IFN W "."
@@ -66,39 +66,49 @@ DQ ;   Quit Device
  Q
  ;
 HDR ; Header Code
- N PAGE S PAGE="Page: "_GMPLPAGE,GMPLPAGE=GMPLPAGE+1
- W $C(13),$$REPEAT^XLFSTR("-",79),!
- I IOST?1"P".E W:$D(GMPLCURR) "** NOT for " W "Medical Record" W:$D(GMPLCURR) " **"
- I IOST'?1"P".E W $P(GMPDFN,U,2)_"  ("_$P(GMPDFN,U,3)_")"
- W ?41,"|  " W:$D(GMPLCURR) "PARTIAL "
- W "PROBLEM LIST",?(79-$L(PAGE)),PAGE,!
- W $$REPEAT^XLFSTR("-",79),!
- W !,"       Date",?63,"Date of   Date"
- W !,"     Recorded  Problems",?64,"Onset  Resolved"
- W !,$$REPEAT^XLFSTR("-",79)
+ N PAGE,MSG S PAGE=$$EZBLD^DIALOG(1250000.409,GMPLPAGE),GMPLPAGE=GMPLPAGE+1
+ D EN^DDIOL($$REPEAT^XLFSTR("-",79))
+ I IOST?1"P".E D
+ . S MSG=$S($D(GMPLCURR):1250000.411,1:1250000.412)
+ . D EN^DDIOL($$EZBLD^DIALOG(MSG))
+ I IOST'?1"P".E D EN^DDIOL($P(GMPDFN,U,2)_"  ("_$P(GMPDFN,U,3)_")")
+ S MSG=$S($D(GMPLCURR):1250000.413,1:1250000.414)
+ D EN^DDIOL(MSG,,"?41")
+ D EN^DDIOL(PAGE,,"?"_(79-$L(PAGE)))
+ D EN^DDIOL($$REPEAT^XLFSTR("-",79))
+ K MSG
+ D BLD^DIALOG(1250000.415,,,"MSG")
+ D EN^DDIOL(.MSG)
+ D EN^DDIOL($$REPEAT^XLFSTR("-",79))
  Q
  ;
 FTR ; Footer Code
- N I,SITE,DFN,VA,VADM,LOC,DATE,FORM
- F I=1:1:(IOSL-$Y-6) W !
+ N I,SITE,DFN,VA,VADM,LOC,DATE,FORM,PARAM,MSG
+ F I=1:1:(IOSL-$Y-6) D EN^DDIOL("")
  S SITE=$$SITE^VASITE,SITE=$P(SITE,"^",2)
  S:SITE'["VAMC" SITE=SITE_" VAMC"
  S DFN=+GMPDFN D OERR^VADPT
- S LOC="Pt Loc: "_$S(VAIN(4)]"":$P(VAIN(4),U,2)_"  "_VAIN(5),1:"OUTPATIENT") K VAIN
+ S PARAM=$S(VAIN(4)]"":$P(VAIN(4),U,2)_"  "_VAIN(5),1:$$EZBLD^DIALOG(1250000.418))
+ S LOC=$$EZBLD^DIALOG(1250000.417,PARAM) K VAIN
  I $L(LOC)>51 S LOC=$E(LOC,1,51),FORM="VAF10-141"
  E  S FORM="VA FORM 10-1415"
- W !,$S($D(GMPLFLAG):"$ = Requires verification by provider",1:"")
- W !,$$REPEAT^XLFSTR("-",79)
- W !,$P(GMPDFN,U,2),?(79-$L(SITE)\2),SITE
+ S MSG=$S($D(GMPLFLAG):$$EZBLD^DIALOG(1250000.419),1:"")
+ D EN^DDIOL(MSG)
+ D EN^DDIOL($$REPEAT^XLFSTR("-",79))
+ D EN^DDIOL($P(GMPDFN,U,2))
+ D EN^DDIOL(SITE,,"?"_(79-$L(SITE)\2))
  S DATE=$$FMTE^XLFDT($E(($$NOW^XLFDT),1,12),2)
- S DATE="Printed:"_$P(DATE,"@")_" "_$P(DATE,"@",2)
- W ?(79-$L(DATE)),DATE
- W !,VA("PID"),?(79-$L(LOC)\2),LOC,?(79-$L(FORM)),FORM
- W !,$$REPEAT^XLFSTR("-",79),@IOF
+ S DATE=$$EZBLD^DIALOG(1250000.420,$P(DATE,"@")_" "_$P(DATE,"@",2))
+ D EN^DDIOL(DATE,,"?"_(79-$L(DATE)))
+ D EN^DDIOL(VA("PID"))
+ D EN^DDIOL(LOC,,"?"_(79-$L(LOC)))
+ D EN^DDIOL(FORM,,"?"_(79-$L(FORM)))
+ D EN^DDIOL($$REPEAT^XLFSTR("-",79))
+ W @IOF
  Q
  ;
 RETURN() ; End of page
- N X,Y,DIR,I F I=1:1:(IOSL-$Y-3) W !
+ N X,Y,DIR,I F I=1:1:(IOSL-$Y-3) D EN^DDIOL("")
  S DIR(0)="E" D ^DIR
  Q +Y
  ;

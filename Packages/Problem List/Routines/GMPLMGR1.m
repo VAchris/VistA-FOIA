@@ -26,10 +26,12 @@ INACTIVE ; Incl inactive problems
  N ACTIVE
  S VALMBCK=$S(VALMCC:"",1:"R")
  I GMPLVIEW("ACT")="" D  Q
- . W !!,"Listing already includes inactive problems!" H 1
+ . D EN^DDIOL($$EZBLD^DIALOG(1250000.327),,"!!") H 1
  S %=$$HASPRBS^GMPLAPI4(.ACTIVE,+GMPDFN,"I")
  I 'ACTIVE D  Q
- . W !!,"Patient has no inactive problems to include.",! H 1
+ . D EN^DDIOL($$EZBLD^DIALOG(1250000.328),,"!!")
+ . D EN^DDIOL("")
+ . H 1
  S GMPLVIEW("ACT")="",VALMBCK="R",VALMSG=$$MSG^GMPLX
  D GETPLIST(.GMPLIST,.GMPTOTAL,.GMPLVIEW),BUILD^GMPLMGR(.GMPLIST),HDR^GMPLMGR
  Q
@@ -37,7 +39,7 @@ INACTIVE ; Incl inactive problems
 NEWSRV ; select new service
  N DIC,NEWVIEW,VIEW,PROMPT,HELPMSG Q:$D(GMPQUIT)
  S DIC="^DIC(49,",DIC("S")="I $P(^(0),U,9)=""C"""
- S VIEW="service(s)",PROMPT="Select SERVICE: ",HELPMSG="LISTSERV"
+ S VIEW="S",PROMPT=$$EZBLD^DIALOG(1250000.330),HELPMSG="LISTSERV"
  D NEW Q:$D(GMPQUIT)
  I NEWVIEW'=$E(GMPLVIEW("VIEW"),2,99) S GMPLVIEW("VIEW")="S"_NEWVIEW,GMPREBLD=1
  Q
@@ -45,50 +47,70 @@ NEWSRV ; select new service
 NEWCLIN ; Select new clinic
  N DIC,NEWVIEW,VIEW,PROMPT,HELPMSG Q:$D(GMPQUIT)
  S DIC="^SC(",DIC("S")="I $P(^(0),U,3)=""C"""
- S VIEW="clinic(s)",PROMPT="Select CLINIC: ",HELPMSG="LISTCLIN"
+ S VIEW="C",PROMPT=$$EZBLD^DIALOG(1250000.332),HELPMSG="LISTCLIN"
  D NEW Q:$D(GMPQUIT)
  I NEWVIEW'=$E(GMPLVIEW("VIEW"),2,99) S GMPLVIEW("VIEW")="C"_NEWVIEW,GMPREBLD=1
  Q
  ;
 NEW ; prompt, from NEWSRV or NEWCLIN
- N X,Y S NEWVIEW="",DIC(0)="EMQ"
- W !!,"Enter the "_VIEW_" from which you wish to view problems:"
+ N X,Y,MSG,DIR S NEWVIEW="",DIC(0)="EMQ"
+ S MSG=$S(VIEW="S":1250000.329,1:1250000.331)
+ D EN^DDIOL($$EZBLD^DIALOG(MSG),,"!!")
  F  D  Q:$D(GMPQUIT)!(X="")
- . W !,PROMPT R X:DTIME I '$T!(X["^") S GMPQUIT=1 Q
- . Q:X=""  I X="?" W !!?3,"Enter the "_VIEW_", one at a time, from which you wish to view",!?3,"problems; press <return> when you have finished.",! Q
+ . K DIR,DTOUT
+ . S DIR(0)="EA"
+ . S DIR("A")=PROMPT
+ . D ^DIR
+ . I ($D(DTOUT))!(X["^") S GMPQUIT=1 Q
+ . Q:X=""
+ . I X="?" D  Q
+ . . K MSG
+ . . D BLD^DIALOG($S(VIEW="S":1250000.333,1:1250000.334),,,"MSG")
+ . . D EN^DDIOL($$EZBLD^DIALOG(.MSG))
  . I X["??" D @HELPMSG Q
- . D ^DIC I Y>0 S NEWVIEW=NEWVIEW_+Y_"/",PROMPT="ANOTHER ONE: "
+ . D ^DIC I Y>0 S NEWVIEW=NEWVIEW_+Y_"/",PROMPT=$$EZBLD^DIALOG(1250000.335)
  I '$D(GMPQUIT),$L(NEWVIEW) S NEWVIEW="/"_NEWVIEW
  Q
  ;
 LISTSERV ; List clinical services
- N I,CNT,Y S CNT=0,Y=""
- W !,"Choose from: "
+ N I,CNT,Y,DIR,DTOUT S CNT=0,Y=""
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.244))
  F I=0:0 S I=$O(^DIC(49,"F","C",I)) Q:I'>0  D  Q:Y'=""
  . S CNT=CNT+1 I '(CNT#8) D  Q:Y="^"
- . . W "      ... more, or ^ to stop: " R Y:DTIME S:'$T Y="^"
- . W !,"   "_$P(^DIC(49,I,0),U)
- . W:$P(^(0),U,4) "  ("_$P(^DIC(49,$P(^(0),U,4),0),U)_")"
- W ! Q
+ . . K DIR,DTOUT
+ . . S DIR(0)="EA"
+ . . S DIR("A")=$$EZBLD^DIALOG(1250000.245)
+ . . D ^DIR
+ . . S:$D(DTOUT) Y="^"
+ . D EN^DDIOL("   "_$P(^DIC(49,I,0),U))
+ . D:$P(^(0),U,4) EN^DDIOL("  ("_$P(^DIC(49,$P(^(0),U,4),0),U)_")",,"?0")
+ D EN^DDIOL("") Q
  ;
 LISTCLIN ; List clinics
- N I,CNT,Y S CNT=0,Y=""
- W !,"Choose from: "
+ N I,CNT,Y,DIR,DTOUT S CNT=0,Y=""
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.244))
  F I=0:0 S I=$O(^SC(I)) Q:I'>0  D  Q:Y'=""
  . Q:$P($G(^SC(I,0)),U,3)'="C"  ; must be a clinic
  . S CNT=CNT+1 I '(CNT#8) D  Q:Y="^"
- . . W "      ... more, or ^ to stop: " R Y:DTIME S:'$T Y="^"
- . W !,"   "_$P($G(^SC(I,0)),U)
- W ! Q
+ . . K DIR,DTOUT
+ . . S DIR(0)="EA"
+ . . S DIR("A")=$$EZBLD^DIALOG(1250000.245)
+ . . D ^DIR
+ . . S:$D(DTOUT) Y="^"
+ . D EN^DDIOL("   "_$P($G(^SC(I,0)),U))
+ D EN^DDIOL("") Q
  ;
 NEWPROV ; select new provider
- N X,Y,DIC,NEWPROV Q:$D(GMPQUIT)  S NEWPROV=""
+ N X,Y,DIC,NEWPROV,DIR,DTOUT,MSG Q:$D(GMPQUIT)  S NEWPROV=""
  S DIC="^VA(200,",DIC(0)="EMQ" ; screen on PROVIDER key ??
- W !!,"Enter the name of the provider whose problems you wish to view:"
-NPRV R !,"Select PROVIDER: ",X:DTIME I '$T!(X["^") S GMPQUIT=1 Q
- Q:X=""  I X="?" D  G NPRV
- . W !!?3,"If you wish to see only those problems of the current patient that"
- . W !?3,"are associated with a specific provider, enter his/her name here.",!
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.336),,"!!")
+NPRV K DIR,DTOUT
+ S DIR(0)="EA"
+ S DIR("A")=$$EZBLD^DIALOG(1250000.337)
+ D BLD^DIALOG(1250000.338,,,"DIR(""?"")")
+ D ^DIR
+ I $D(DTOUT)!X["^" S GMPQUIT=1 Q
+ Q:X=""
  I X["??" D NPHELP^GMPLEDT2 G NPRV
  D ^DIC S:+Y NEWPROV=Y I +Y'>0 G NPRV
  I +NEWPROV'=+GMPLVIEW("PROV") S GMPLVIEW("PROV")=NEWPROV,GMPREBLD=1
@@ -101,7 +123,7 @@ KEY S XQORM("KEY","=")=$$PROTKEY^GMPLEXT("VALM NEXT SCREEN")_"^1"
  ;
 GETPLIST(PLIST,TOTAL,VIEW) ; Build PLIST(#)=IFN for view
  N STBEG,STEND,ST,CNT,IFN,RECORD,DATE,LIST K PLIST
- W:'$G(GMPARAM("QUIET")) !,"Searching for the patient's problem list ..."
+ D:'$G(GMPARAM("QUIET")) EN^DDIOL($$EZBLD^DIALOG(1250000.339))
  S %=$$GETPLIST^GMPLAPI4(.PLIST,GMPDFN,VIEW("ACT"),GMPARAM("REV"),VIEW("PROV"),VIEW("VIEW"),1)
  S TOTAL=PLIST
  Q

@@ -1,33 +1,51 @@
 GMPLBLDF ; SLC/MKB -- Build Problem Selection List from IB Enc Form ; 05/21/12
  ;;2.0;Problem List;**260002**;Aug 25, 1994
 EN ; Start here.
+ N MSG
  S X="IBDF18" X ^%ZOSF("TEST") I '$T D  Q
- . W !!,">>>  The IB Encounter Form utility is not available.",!
+ . D BLD^DIALOG(1250000.135,,,"MSG")
+ . D EN^DDIOL(.MSG)
 EN0 S GMPLFORM=$$GETFORM^IBDF18 G:'GMPLFORM EXIT
- W !,"Searching for the problems ..."
+ D BLD^DIALOG(1250000.126,,,"MSG")
+ D EN^DDIOL(.MSG)
  S X=$$COPYFORM^IBDF18(+GMPLFORM,"GMPL"),GMPL(0)=X
- I 'X W !!,"No problems found.  Please select another form.",! G EN0
+ I 'X D  G EN0
+ . D BLD^DIALOG(1250000.136,,,"MSG")
+ . D EN^DDIOL(.MSG)
 EN1 ; Create list to copy problems into
- S DIR(0)="FA^3:30",DIR("A")="LIST NAME: "
+ S DIR(0)="FA^3:30"
+ D BLD^DIALOG(1240000.145,,,"DIR(""A"")")
  N RETURN
  S %=$$GETLIST^GMPLAPI1(.RETURN,$P(GMPLFORM,U,2))
  M ^TMP("GMPLLIST",$J)=RETURN
  S:'RETURN DIR("B")=$P(GMPLFORM,U,2)
- S DIR("?",1)="Enter the name you wish to give this list; use meaningful"
- S DIR("?")="text, as it will be used as a title when presenting this list."
- W !!,">>>  Please create a new selection list in which to store these problems:"
+ D BLD^DIALOG(1250000.137,,,"DIR(""?"")")
+ K MSG
+ D BLD^DIALOG(1250000.138,,,"MSG")
+ D EN^DDIOL(.MSG)
 EN2 D ^DIR G:$D(DUOUT)!($D(DTOUT)) EXIT
  N ERR,CLINIC K ^TMP("GMPLLIST",$J)
  S ERR=$$NEWLST^GMPLAPI1(.RETURN,Y)
- I ERR=0,$P(RETURN(0),U,1)="LISTXST" W $C(7),!,"There is already a list by this name!",! G EN2
- I RETURN'>0 W !!,"ERROR -- Cannot create new list!",$C(7) G EXIT
+ I ERR=0,$P(RETURN(0),U,1)="LISTXST" D  G EN2
+ . K MSG
+ . D EN^DDIOL($C(7))
+ . D BLD^DIALOG(1250000.139,,,"MSG")
+ . D EN^DDIOL(.MSG)
+ I RETURN'>0 D  G EXIT
+ . K MSG
+ . D EN^DDIOL($C(7))
+ . D BLD^DIALOG(1250000.140,,,"MSG")
+ . D EN^DDIOL(.MSG)
  S GMPLSLST=RETURN
  S CLINIC=$$CLINIC^GMPLBLD3
  I CLINIC S %=$$ADDLOC^GMPLAPI5(.RETURN,GMPLSLST,CLINIC)
 EN3 ; Here we go ...
- W !!,"Copying problems from "_$P(GMPLFORM,U,2)_" form into "
- W:(42+$L($P(GMPLFORM,U,2))+$L($P(GMPLSLST,U,2))>80) !
- W $P(GMPLSLST,U,2)_" list ..."
+ N PARM
+ K MSG
+ S PARM(1)=$P(GMPLFORM,U,2)
+ S PARM(2)=$P(GMPLSLST,U,2)
+ D BLD^DIALOG(1250000.141,.PARM,,"MSG")
+ D EN^DDIOL(.MSG)
  N RET,GSEQ,PSEG,NSEQ,GMPLI,GHDR,ITEM,SOURCE
  S (GSEQ,PSEQ,GMPLI)=0,GHDR="" S:'+GMPL(1) GHDR=$P(GMPL(1),U,2),GMPLI=1
  K ^TMP("GMPLIST",$J),^TMP("GMPGRP",$J)
@@ -47,14 +65,14 @@ EN3 ; Here we go ...
  K SOURCE M SOURCE=^TMP("GMPLIST",$J)
  S %=$$SAVLST^GMPLAPI1(.RET,+GMPLSLST,.SOURCE)
  K ^TMP("GMPLIST",$J),^TMP("GMPGRP",$J)
- W " <done>"
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.100),"","")
 EXIT ; Clean-up
  K GMPL,GMPLSLST,GMPLGRP,GMPLI,GMPLFORM,GHDR,GSEQ,PSEQ,NSEQ,ITEM
  Q
  ;
 NEWGRP(FORM,HDR,SEQ) ; Create new group entries in #125.1 and #125.11
  N RETURN,NAME,ANAME,GRP,ITEM,NSEQ
- S ANAME=$E($P(FORM,U,2),1,23-$L(SEQ))_" GROUP "_SEQ
+ S ANAME=$E($P(FORM,U,2),1,23-$L(SEQ))_$$EZBLD^DIALOG(1250000.146,,"")_SEQ
  I $L(HDR) S NAME=$$UP^XLFSTR(HDR) E  S NAME=ANAME
  S %=$$NEWCAT^GMPLAPI1(.RETURN,NAME)
  I RETURN=0 S NAME=ANAME S %=$$NEWCAT^GMPLAPI1(.RETURN,NAME,1)

@@ -4,18 +4,18 @@ GMPLBLD3 ; SLC/MKB -- Bld PL Selection Lists cont ; 04/12/12
  ; This routine invokes IA #3991
  ;
 ASSIGN ; Assign list to clinic, users: Expects GMPLSLST
- N DIE,DA,DR,RET D FULL^VALM1 G:+$G(GMPLSLST)'>0 ASQ
+ N DIE,DA,DR,RE,MSGT D FULL^VALM1 G:+$G(GMPLSLST)'>0 ASQ
  I '$$VALLIST^GMPLAPI6(.RET,+GMPLSLST) D  G ASQ
- . W !!,$C(7),"This Selection List contains problems with inactive ICD9 codes associated with"
- . W !,"them. The codes must be edited and corrected before the list can be assigned",!,"to users or clinics."
- . W !!,"If you have edited the list during this session to correct inactive codes, "
- . W !,"save the list prior to attempting to assign it."
+ . D BLD^DIALOG(1250000.102,,,"MSG")
+ . D EN^DDIOL($C(7))
+ . D EN^DDIOL(.MSG)
  . N DIR,DUOUT,DTOUT,DIRUT
  . S DIR(0)="E" D ^DIR
  . Q
  ;
- W !!,"You may assign this list to a clinic as its default selection list,"
- W !,"as well as to individual users as a preferred selection list.",!
+ K MSG
+ D BLD^DIALOG(1250000.103,,,"MSG")
+ D EN^DDIOL(.MSG)
  D ASGCLIN(+GMPLSLST)
  D USERS("1") ; assign
 ASQ S VALMBCK="R",VALMSG=$$MSG^GMPLX
@@ -35,7 +35,7 @@ CLINIC(PREFIX,SUFIX) ;
 CL ;
  N PRMPT,LNAME,X,LSTS,Y,RETURN,LSTS,PREF,SUF
  S PREF=$G(PREFIX),SUF=$G(SUFIX)
- S Y=-1,PRMPT=PREF_"CLINIC: "_SUF
+ S Y=-1,PRMPT=PREF_$$EZBLD^DIALOG(1250000.104)_SUF
  W !,PRMPT R X:$S($D(DTIME):DTIME,1:300) I "^"[X!($G(X)="") S Y=-1 Q "^"
  I X="?" D CH1 S %=$$GETCLIN^GMPLAPI5(.LSTS) D PRINTALL^GMPLBLD2(.LSTS,1)
  I X?1"??".E D
@@ -47,44 +47,56 @@ CL ;
  Q Y
  ;
 CH1 ;
- W !,$C(9)_"Enter the clinic to be associated with this list."
- W !,$C(9)_"Only hospital locations that are clinics are allowed."
- W !,"    Answer with HOSPITAL LOCATION NAME, or ABBREVIATION, or TEAM"
+ N MSG
+ D BLD^DIALOG(1250000.105,,,"MSG")
+ D EN^DDIOL(.MSG)
  Q
  ;
 CH2 ;
- W !,$C(9)_"This is the clinic to be associated with this list.  This should be the"
- W !,$C(9)_"primary clinic in which this list will be used to populate patient"
- W !,$C(9)_"problem lists; when adding new problems for a patient from this clinic,"
- W !,$C(9)_"this list will automatically be presented to select problems from.",!!
+ N MSG
+ D BLD^DIALOG(1250000.106,,,"MSG")
+ D EN^DDIOL(.MSG)
  Q
  ;
 USERS(ADD) ; -- select user(s) to de-/assign list
- N DIR,DIC,DIE,DR,DA,X,Y,GMPLUSER,GMPLI,RETURN,PRMT
+ N DIR,DIC,DIE,DR,DA,X,Y,GMPLUSER,GMPLI,RETURN,PRMT,MSG,PARM
  Q:+$G(GMPLSLST)'>0  S GMPLUSER=""
- S PRMT="Select USER: "
- F  D READUS(PRMT) Q:+Y'>0  S GMPLUSER=GMPLUSER_U_+Y,PRMT="ANOTHER ONE: "
- I '$L(GMPLUSER) W !!,"No users selected.",! Q
- S DIR(0)="YA",DIR("A")="Are you ready? ",DIR("B")="NO"
- S DIR("?",1)="Enter YES to "_$S(ADD:"assign",1:"remove")_" the "_$P(GMPLSLST,U,2)_" list "_$S(ADD:"to the",1:"from the")
- S DIR("?")=($L(GMPLUSER,U)-1)_" user(s) selected; enter NO to exit."
+ S PRMT=$$EZBLD^DIALOG(1250000.107)
+ F  D READUS(PRMT) Q:+Y'>0  S GMPLUSER=GMPLUSER_U_+Y,PRMT=$$EZBLD^DIALOG(1250000.108)
+ I '$L(GMPLUSER) D  Q
+ . D BLD^DIALOG(1250000.109,,,"MSG")
+ . D EN^DDIOL(.MSG)
+ S DIR(0)="YA",DIR("A")=$$EZBLD^DIALOG(1250000.110),DIR("B")="NO"
+ S PARM(1)=$P(GMPLSLST,U,2)
+ S PARM(2)=$L(GMPLUSER,U)-1
+ D:ADD BLD^DIALOG(1250000.111,.PARM,,"DIR(""?"")")
+ D:'ADD BLD^DIALOG(1250000.112,.PARM,,"DIR(""?"")")
  D ^DIR Q:'Y
-USR W !,$S(ADD:"Assigning ",1:"Removing ")_$P(GMPLSLST,U,2)_" list ..."
+USR ;
+ K MSG
+ D:ADD BLD^DIALOG(1250000.113,$P(GMPLSLST,U,2),,"MSG")
+ D:'ADD BLD^DIALOG(1250000.114,$P(GMPLSLST,U,2),,"MSG")
+ D EN^DDIOL(.MSG)
  F GMPLI=1:1:$L(GMPLUSER,U) S DA=$P(GMPLUSER,U,GMPLI) I DA D
  . S %=$S(ADD:$$ASSUSR^GMPLAPI6(.RETURN,GMPLSLST,DA),1:$$REMUSR^GMPLAPI6(.RETURN,GMPLSLST,DA))
- . W !?4,$$PROVNAME^GMPLEXT(DA)
- W !!,"DONE."
+ . D EN^DDIOL($$PROVNAME^GMPLEXT(DA),,"!?4")
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.115),"","!!")
  Q
  ;
 READUS(PRMT) ; prompt for username, respond
 READ ;
- N LSTS
- W !,PRMT R X:DTIME I '$T!("^"[X) S Y=-1 Q
- I X="?" W !!,"Enter the name of the user you wish this list to be "_$S(ADD:"assigned to;",1:"removed from;"),!,"enter '??' to see users currently assigned this list, or '???' to see",!,"all users on this system.",! G READ
+ N LSTS,MSG
+ D EN^DDIOL(PRMT) R X:DTIME I '$T!("^"[X) S Y=-1 Q
+ I X="?" D  G READ
+ . D:ADD BLD^DIALOG(1250000.116,,,"MSG")
+ . D:'ADD BLD^DIALOG(1250000.117,,,"MSG")
+ . D EN^DDIOL(.MSG)
  I X?1"??".E D  G READ
  . I X="??" D
  . . S %=$$GETASUSR^GMPLAPI5(.LSTS,+GMPLSLST)
- . . W !!,"Users currently assigned "_$P(GMPLSLST,U,2)_" list:",!!
+ . . K MSG
+ . . D BLD^DIALOG(1250000.118,$P(GMPLSLST,U,2),,"MSG")
+ . . D EN^DDIOL(.MSG)
  . E  D
  . . S %=$$GETUSRS^GMPLAPI5(.LSTS)
  . D PRINTALL^GMPLBLD2(.LSTS,1)
@@ -93,27 +105,34 @@ READ ;
  Q
  ;
 DELETE ; Delete Selection List
- N DIR,DIK,DA,X,Y,VIEW,USER,GMPCOUNT,GMPQUIT,GMPLSLST,RETURN
+ N DIR,DIK,DA,X,Y,VIEW,USER,GMPCOUNT,GMPQUIT,GMPLSLST,RETURN,MSG
  S GMPCOUNT=0,GMPLSLST=$$LIST^GMPLBLD2("") Q:GMPLSLST=0
- W !!,"Checking the New Person file for use of this list ..."
+ D BLD^DIALOG(1250000.119,,,"MSG")
+ D EN^DDIOL(.MSG)
  S %=$$LSTUSED^GMPLAPI1(.RETURN,GMPLSLST)
  S GMPCOUNT=RETURN
- I GMPCOUNT W $C(7),!!,GMPCOUNT_" user(s) are currently assigned this list!",!,"CANNOT DELETE",! Q
- W !,"0 users found."
+ I GMPCOUNT D  Q
+ . K MSG
+ . D BLD^DIALOG(1250000.120,GMPCOUNT,,"MSG")
+ . D EN^DDIOL($C(7))
+ . D EN^DDIOL(.MSG)
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.121))
 DEL1 S DIR(0)="Y",DIR("B")="NO"
- S DIR("A")="Are you sure you want to delete this list"
- S DIR("?",1)="Enter YES if you wish to completely remove this list; press <return>",DIR("?")="to leave this list unchanged and exit this option."
+ D BLD^DIALOG(1250000.122,,,"DIR(""A"")")
+ D BLD^DIALOG(1250000.123,,,"DIR(""?"")")
  W $C(7),! D ^DIR Q:'Y
- W !!,"Deleting "_$P(GMPLSLST,U,2)_" selection list ..."
+ K MSG
+ D BLD^DIALOG(1250000.124,$P(GMPLSLST,U,2),,"MSG")
+ D EN^DDIOL(.MSG)
  K RETURN
  S %=$$DELLST^GMPLAPI1(.RETURN,+GMPLSLST)
- W "." ; list
- W !,"DONE.",!
+ D EN^DDIOL(".",,"")
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.115))
  Q
  ;
 MENU ; -- init variables and list array for GMPL LIST MENU list template
  ;    Expects GMPLSLST=selection list
- N RETURN,GRP,IND,IND1
+ N RETURN,GRP,IND,IND1,MSG
  S IND=0,IND1=0
  S %=$$GETLIST^GMPLAPI1(.RETURN,GMPLSLST,"")
  M ^TMP("GMPLMENU1",$J)=RETURN
@@ -124,6 +143,8 @@ MENU ; -- init variables and list array for GMPL LIST MENU list template
  . . S PRB=^TMP("GMPLMENU1",$J,"GRP",IND,IND1)
  . . S ^TMP("GMPLMENU",$J,IND,IND1)=$P(PRB,U,4)_U_$P(PRB,U,1,2)
  K ^TMP("GMPLMENU1",$J)
- I '$D(^TMP("GMPLMENU",$J)) W !!,"No items available.  Returning to Problem List ..." H 2 S VALMBCK="Q",VALMQUIT=1 Q
+ I '$D(^TMP("GMPLMENU",$J)) D  H 2 S VALMBCK="Q",VALMQUIT=1 Q
+ . D BLD^DIALOG(1250000.125,,,"MSG")
+ . D EN^DDIOL(.MSG)
  D BUILD^GMPLMENU
  Q

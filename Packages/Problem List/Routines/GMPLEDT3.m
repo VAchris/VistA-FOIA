@@ -9,7 +9,7 @@ GMPLEDT3 ; SLC/MKB/KER -- Problem List edit utilities ; 09/14/12
  ;   DBIA 10104  $$UP^XLFSTR
  ;                     
 MSG() ; List Manager Message Bar
- Q "Enter the number of the item(s) you wish to change"
+ Q $$EZBLD^DIALOG(1250000.263)
  ;
 KEYS ; Setup XQORM("KEY") array
  ;   Numbers ref'd also in IN4^-EDIT, NTES^-EDT4
@@ -69,7 +69,7 @@ JUMP(XFLD) ; Resolve ^- Jump Out of Field Order in Edit
  ;   Passed in as ^XXX
  S XFLD=$$UP^XLFSTR($P(XFLD,U,2))
  I (XFLD="")!(XFLD["^") S GMPQUIT=1 Q
- I '$D(GMPLJUMP) W $C(7),"  ^-jumping not allowed now!" S GMPLJUMP=0 Q
+ I '$D(GMPLJUMP) D EN^DDIOL($C(7)_$$EZBLD^DIALOG(1250000.264),,"?0") S GMPLJUMP=0 Q
  ;   Field is Exact
  I $G(GMPFLD("FLD",XFLD)) S GMPLJUMP=GMPFLD("FLD",XFLD) Q
  S CNT=0,PROMPT=" "
@@ -80,8 +80,9 @@ JUMP(XFLD) ; Resolve ^- Jump Out of Field Order in Edit
  I CNT=1 S PROMPT=$P(MATCH(1),U,2),GMPLJUMP=+MATCH(1) W $E(PROMPT,$L(XFLD)+1,$L(PROMPT)) Q
  ;   Select which Field to Jump To.
  F I=1:1:CNT S DIR("A",I)=I_"  "_$P(MATCH(I),U,2)
- S DIR("A")="Select 1-"_CNT_": ",DIR(0)="NAO^1:"_CNT
- S DIR("?")="Select the field you wish to jump to, by number"
+ S DIR(0)="NAO^1:"_CNT
+ D BLD^DIALOG(1250000.265,CNT,,"DIR(""A"")")
+ D BLD^DIALOG(1250000.266,,,"DIR(""?"")")
  D ^DIR I $D(DTOUT)!($D(DUOUT))!(Y="") Q
  S GMPLJUMP=+MATCH(+Y)
  Q

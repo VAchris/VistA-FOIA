@@ -9,19 +9,23 @@ EN ; -- main entry point
  ;
 HDR ; -- header code
  N NAME,NUM,DATE
- S NUM=+^TMP("GMPLST",$J,0)_" categor"_$S(+^TMP("GMPLST",$J,0)'=1:"ies",1:"y")
- S DATE="Last Modified: "_^TMP("GMPLIST",$J,"LST","MODIFIED")
+ S NUM=+^TMP("GMPLST",$J,0)_$S(+^TMP("GMPLST",$J,0)'=1:$$EZBLD^DIALOG(1250000.036),1:$$EZBLD^DIALOG(1250000.037))
+ S DATE=$$EZBLD^DIALOG(1250000.038)_^TMP("GMPLIST",$J,"LST","MODIFIED")
  S VALMHDR(1)=DATE_$J(NUM,79-$L(DATE))
  S NAME=^TMP("GMPLIST",$J,"LST","NAME"),VALMHDR(2)=$J(NAME,$L(NAME)\2+41)
  Q
  ;
 INIT ; -- init variables and list array
- N RETURN
+ N RETURN,MSG
  S GMPLSLST=$$LIST^GMPLBLD2("L") I GMPLSLST="^" S VALMQUIT=1 Q
  I '$$LOCKLST^GMPLAPI1(.RETURN,GMPLSLST) D  G INIT
- . W $C(7),!!,"This list is currently being edited by another user!",!
+ . S MSG(1)=$C(7)
+ . S MSG(2)=$$EZBLD^DIALOG(1250000.039)
+ . S MSG(2,"F")="!!"
+ . S MSG(3)=""
+ . D EN^DDIOL(.MSG)
  S GMPLMODE="E",VALMSG=$$MSG^GMPLX
- W !,"Searching for the list ..."
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.040))
  D GETLIST,BUILD("^TMP(""GMPLIST"",$J)",GMPLMODE)
  Q
  ;
@@ -34,12 +38,12 @@ GETLIST ; Build ^TMP("GMPLIST",$J,#)
 BUILD(LIST,MODE) ; Build ^TMP("GMPLST",$J,)
  N SEQ,LCNT,NUM,HDR,GROUP,IFN,ITEM,PSEQ,FLAG D CLEAN^VALM10
  S:'$D(^TMP("GMPLIST",$J,0)) ^TMP("GMPLIST",$J,0)=0
- I $P($G(^TMP("GMPLIST",$J,0)),U,1)'>0 S ^TMP("GMPLST",$J,1,0)="   ",^TMP("GMPLST",$J,2,0)="No items available.",^TMP("GMPLST",$J,0)="0^2",VALMCNT=2 Q
+ I $P($G(^TMP("GMPLIST",$J,0)),U,1)'>0 S ^TMP("GMPLST",$J,1,0)="   ",^TMP("GMPLST",$J,2,0)=$$EZBLD^DIALOG(1250000.041),^TMP("GMPLST",$J,0)="0^2",VALMCNT=2 Q
  S (LCNT,NUM,SEQ)=0
  F  S SEQ=$O(^TMP("GMPLIST",$J,"SEQ",SEQ)) Q:SEQ'>0  D
  . S IFN=^TMP("GMPLIST",$J,"SEQ",SEQ),LCNT=LCNT+1,NUM=NUM+1
  . S GROUP=$P(^TMP("GMPLIST",$J,IFN),U,2),HDR=$P(^TMP("GMPLIST",$J,IFN),U,3)
- . S:'$L(HDR) HDR="<no header>"
+ . S:'$L(HDR) HDR=$$EZBLD^DIALOG(1250000.042)
  . I LCNT>1,+$P(^TMP("GMPLIST",$J,IFN),U,4),^TMP("GMPLST",$J,LCNT-1,0)'="   " S LCNT=LCNT+1,^TMP("GMPLST",$J,LCNT,0)="   "
  . S ^TMP("GMPLST",$J,LCNT,0)=$S(MODE="I":$J("<"_SEQ_">",8),1:"        ")_$J(NUM,4)_" "_HDR,^TMP("GMPLST",$J,"B",NUM)=IFN
  . D CNTRL^VALM10(LCNT,9,5,IOINHI,IOINORM)
@@ -53,21 +57,16 @@ BUILD(LIST,MODE) ; Build ^TMP("GMPLST",$J,)
  ... S ^TMP("GMPLST",$J,LCNT,0)=^TMP("GMPLST",$J,LCNT,0)_" ("_$P(ITEM,U,2)_")"
  ... S FLAG=$P(ITEM,U,3)
  ... Q:$G(FLAG)="0"  ; code is active
- ... S ^TMP("GMPLST",$J,LCNT,0)=^TMP("GMPLST",$J,LCNT,0)_"    <INACTIVE CODE>"
+ ... S ^TMP("GMPLST",$J,LCNT,0)=^TMP("GMPLST",$J,LCNT,0)_$$EZBLD^DIALOG(1250000.043)
  . S LCNT=LCNT+1,^TMP("GMPLST",$J,LCNT,0)="   "
  S ^TMP("GMPLST",$J,0)=NUM_U_LCNT,VALMCNT=LCNT
  Q
  ;
 HELP ; -- help code
- N X
- W !!?4,"You may take a variety of actions to update this selection list."
- W !?4,"New categories may be added to this list, or an existing one"
- W !?4,"removed; Edit Category will allow you to change the contents of"
- W !?4,"a category, or create a new one that may be added to this list."
- W !?4,"You may also change how each category appears in this list,"
- W !?4,"view each category's sequence number to facilitate resequencing,"
- W !?4,"assign this list to a clinic or user(s), or edit a different list."
- W !!,"Press <return> to continue ..." R X:DTIME
+ N X,DIR
+ D BLD^DIALOG(1250000.044,,,"DIR(""A"")")
+ S DIR(0)="FAO"
+ D ^DIR
  S VALMSG=$$MSG^GMPLX,VALMBCK=$S(VALMCC:"",1:"R")
  Q
  ;
@@ -80,14 +79,15 @@ EXIT ; -- exit code
  Q
  ;
 ADD ; Add group(s)
- N SEQ,GROUP,HDR,IFN,GMPQUIT,GMPREBLD,ERR,RETURN,RET D FULL^VALM1
- F  D  Q:$D(GMPQUIT)  W !
+ N SEQ,GROUP,HDR,IFN,GMPQUIT,GMPREBLD,ERR,RETURN,RET,MSG D FULL^VALM1
+ F  D  Q:$D(GMPQUIT)  D EN^DDIOL(" ")
  . S GROUP=$$GROUP^GMPLBLD2("") I GROUP="^" S GMPQUIT=1 Q
- . I $D(^TMP("GMPLIST",$J,"GRP",+GROUP)) W !?4,">>>  This category is already part of this list!" Q
+ . I $D(^TMP("GMPLIST",$J,"GRP",+GROUP)) D EN^DDIOL($$EZBLD^DIALOG(1250000.045),"","!?4") Q
  . I '$$VALGRP^GMPLAPI6(.RET,+GROUP) D  Q
  .. D FULL^VALM1
- .. W !!,$C(7),"This category contains one or more problems with inactive ICD-9 codes. "
- .. W !,"These codes must be updated before adding the category to a selection list."
+ .. D EN^DDIOL($C(7))
+ .. D BLD^DIALOG(1250000.046,,,"MSG")
+ .. D EN^DDIOL(.MSG)
  .. N DIR,DTOUT,DIRUT,DUOUT,X,Y
  .. S DIR(0)="E" D ^DIR
  .. S VALMBCK="R"
@@ -114,11 +114,13 @@ REMOVE ; Remove group
  N NUM,IFN,SEQ,GRP,DIR,X,Y S VALMBCK=""
  S NUM=$$SEL1^GMPLBLD1 G:NUM="^" RMQ
  S IFN=$G(^TMP("GMPLST",$J,"B",NUM)) G:+IFN'>0 RMQ
- I "@"[$G(^TMP("GMPLIST",$J,IFN)) W $C(7),!!,"Category is not part of this list!" H 2 G RMQ
- S DIR("A")="Are you sure you want to remove '"_$P(^TMP("GMPLIST",$J,IFN),U,3)_"'? "
- S DIR("?")="Enter YES to delete this category from the current list; enter NO to exit."
+ I "@"[$G(^TMP("GMPLIST",$J,IFN)) D  H 2 G RMQ
+ . D EN^DDIOL($C(7))
+ . D EN^DDIOL($$EZBLD^DIALOG(1250000.047,"","!!"))
+ S DIR("A")=$$EZBLD^DIALOG(1250000.048,$P(^TMP("GMPLIST",$J,IFN),U,3))
+ S DIR("?")=$$EZBLD^DIALOG(1250000.049)
  S DIR(0)="YA",DIR("B")="NO" D ^DIR
- I 'Y W !?5,"< Nothing removed! >" H 1 G RMQ
+ I 'Y D EN^DDIOL($$EZBLD^DIALOG(1250000.132)) H 1 G RMQ
  D DELETE^GMPLBLD1(IFN) S VALMBCK="R",GMPLSAVE=1
  D BUILD("^TMP(""GMPLIST"",$J)",GMPLMODE),HDR
 RMQ S:'VALMCC VALMBCK="R" S VALMSG=$$MSG^GMPLX

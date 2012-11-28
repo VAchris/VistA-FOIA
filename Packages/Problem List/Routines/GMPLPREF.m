@@ -6,17 +6,23 @@ EN ; -- main entry point for GMPL USER PREFS
  Q
  ;
 INIT ; -- init variables and list array
+ N MSG
  S GMPLVIEW=$$USERVIEW^GMPLEXT(),GMPLMODE=$E(GMPLVIEW) ; 'S' or 'C'
  S GMPLMODE=$$VIEW^GMPLPRF0(GMPLMODE)
  I GMPLMODE="^" K GMPLVIEW,GMPLMODE S VALMQUIT=1 Q
- I $$ALL^GMPLPRF0(GMPLMODE,$L(GMPLVIEW,"/")) D SAVE^GMPLPRF1 W !!,"Preferred View saved.",! H 1 S VALMQUIT=1 Q
+ I $$ALL^GMPLPRF0(GMPLMODE,$L(GMPLVIEW,"/")) D  Q
+ . D SAVE^GMPLPRF1
+ . D BLD^DIALOG(1250000.357,,,"MSG")
+ . D EN^DDIOL(.MSG)
+ . H 1
+ . S VALMQUIT=1
  D GETSLIST:GMPLMODE="S",GETCLIST:GMPLMODE'="S"
  Q
  ;
 GETSLIST ; -- init SERVICE list array
  N LCNT,IFN,NAME,PARENT,CLDRN,SVCD,SVCPD,SVCS
  K ^TMP("GMPLIST",$J) S LCNT=0,^TMP("GMPLIST",$J,"VIEW",0)=0
- W !!,"Retrieving the list of clinical services ..."
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.358),,"!!")
  D SVCLIST^GMPLEXT(.SVCS,"C")
  F IFN=0:0 S IFN=$O(SVCS(IFN)) Q:IFN'>0  D
  . Q:$D(^TMP("GMPLIST",$J,"B",IFN))  ; service already on list
@@ -31,7 +37,7 @@ GETSLIST ; -- init SERVICE list array
  . F CHILD=0:0 S CHILD=$O(CLDRN(CHILD)) Q:CHILD'>0  I CHILD'=IFN D
  . . S NAME="  "_CLDRN(CHILD)
  . . D ITEM(CHILD,NAME,GMPLVIEW,.LCNT)
- I LCNT'>0 S ^TMP("GMPLIST",$J,1,0)="   ",^TMP("GMPLIST",$J,2,0)="    No clinical services available to select from."
+ I LCNT'>0 S ^TMP("GMPLIST",$J,1,0)="   ",^TMP("GMPLIST",$J,2,0)=$$EZBLD^DIALOG(1250000.359)
  D:$P(VALMDDF("SERVICE"),U,4)'="Service" CHGCAP^VALM("SERVICE","Service")
  S VALMCNT=LCNT,^TMP("GMPLIST",$J,0)=VALMCNT,VALMSG=$$MSG
  Q
@@ -39,13 +45,13 @@ GETSLIST ; -- init SERVICE list array
 GETCLIST ; -- init CLINIC list array
  N LCNT,IFN,NAME,LIST,DET
  K ^TMP("GMPLIST",$J) S LCNT=0,^TMP("GMPLIST",$J,"VIEW",0)=0
- W !!,"Retrieving the list of clinics ..."
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.360),"!!")
  D CLINLST^GMPLEXT(.LIST)
  F IFN=0:0 S IFN=$O(LIST(IFN)) Q:IFN'>0  D
  . D CLINDET^GMPLEXT(.DET,IFN)
  . Q:$G(DET("TYPE"))'="C"  ; loc not a clinic
  . S NAME=$G(DET("NAME")) D ITEM(IFN,NAME,GMPLVIEW,.LCNT)
- I LCNT'>0 S ^TMP("GMPLIST",$J,1,0)="   ",^TMP("GMPLIST",$J,2,0)="    No clinics available to select from."
+ I LCNT'>0 S ^TMP("GMPLIST",$J,1,0)="   ",^TMP("GMPLIST",$J,2,0)=$$EZBLD^DIALOG(1250000.361)
  D:$P(VALMDDF("SERVICE"),U,4)'="Clinic" CHGCAP^VALM("SERVICE","Clinic")
  S VALMCNT=LCNT,^TMP("GMPLIST",$J,0)=VALMCNT,VALMSG=$$MSG
  Q
@@ -68,27 +74,22 @@ HDR ; -- header code
  Q
  ;
 HELP ; -- help code
- N X,Y S:GMPLMODE="S" X="services",Y="clinics"
- S:GMPLMODE'="S" X="clinics",Y="services"
- W !!?4,"To create or change your preferred view, choose either Add or"
- W !?4,"Remove; those "_X_" you add will be flagged above with a 'Y'."
- W !?4,"Within the Problem List application, ONLY those problems associated"
- W !?4,"with your selected "_X_" will initially be displayed, however"
- W !?4,"the entire list is always available using its Select View option."
- W !?4,"If you wish to create a view according to "_Y_" instead, or not"
- W !?4,"to have a view at all, choose Select New View or Delete respectively."
- W !!,"Press <return> to continue ... " R X:DTIME
+ N DIR,MSG
+ S MSG=$S(GMPLMODE="S":1250000.362,1:1250000.363)
+ S DIR(0)="EA"
+ D BLD^DIALOG(MSG,,,"DIR(""A"")")
+ D ^DIR
  S VALMSG=$$MSG,VALMBCK=$S(VALMCC:"",1:"R")
  Q
  ;
 CLEAN ; -- exit code
  I $$DIFFRENT^GMPLPRF1,'$D(GMPSAVED) D
- . N DIR,X,Y S DIR(0)="Y"
- . W !!,$C(7),">>>  YOUR PREFERRED VIEW HAS CHANGED!!"
- . S DIR("A")="Do you want to save these changes",DIR("B")="YES"
- . S DIR("?",1)="Enter YES to have only problems from the "_$S(GMPLMODE="S":"service",1:"clinic")_"s indicated above"
- . S DIR("?",2)="listed, when initially displaying a patient's problem list;"
- . S DIR("?")="enter NO to retain your previous view."
+ . N DIR,X,Y,MSG S DIR(0)="Y"
+ . D EN^DDIOL($C(7),,"?0")
+ . D EN^DDIOL($$EZBLD^DIALOG(1250000.364),,"!!")
+ . S DIR("A")=$$EZBLD^DIALOG(1250000.365),DIR("B")="YES"
+ . S MSG=$S(GMPLMODE="S":1250000.366,1:1250000.367)
+ . D BLD^DIALOG(MSG,,,"DIR(""?"")")
  . D ^DIR D:Y SAVE^GMPLPRF1
  K GMPLVIEW,GMPLIST,GMPLMODE,GMPSAVED
  K ^TMP("GMPLIST",$J)
@@ -96,5 +97,7 @@ CLEAN ; -- exit code
  Q
  ;
 MSG() ; -- msg line for more help
- N X S X="+ More "_$S(GMPLMODE="S":"Services",1:"Clinics")_"   ?? More actions"
+ N X,MSG
+ S MSG=$S(GMPLMODE="S":1250000.368,1:1250000.369)
+ S X=$$EZBLD^DIALOG(MSG)
  Q X

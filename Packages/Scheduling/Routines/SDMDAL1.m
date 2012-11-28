@@ -198,7 +198,7 @@ LSTPAPTS(RETURN,DFN,SDBEG,SDEND) ; Get patient appointments
  . S RETURN(CNT,"DFN")=DFN
  . S SDDA="",CN=0
  . F  S CN=$O(^SC(SC,"S",SDT,1,CN)) Q:'+CN!(SDDA>0)  D
- . . S CNPAT=$P($G(^SC(SC,"S",SDT,1,CN,0)),U) 
+ . . S CNPAT=$P($G(^SC(SC,"S",SDT,1,CN,0)),U)
  . . Q:CNPAT'=DFN
  . . S SDDA=CN
  . S RETURN(CNT,"SDDA")=SDDA

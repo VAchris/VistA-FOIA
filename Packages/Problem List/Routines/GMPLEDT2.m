@@ -18,97 +18,121 @@ EDITED() ; Returns 1 if problem has been altered
 EDQ Q DIFFRENT
  ;
 SUREDEL(NUM) ; -- sure you want to delete problems?
- N DIR,X,Y
- W !!,"CAUTION:  "_$S(NUM=1:"This problem",1:"These "_NUM_" problems")_" will be completely removed",!,"          from this patient's list!!",!
- S DIR(0)="YA",DIR("A")="Are you sure? ",DIR("B")="NO"
- S DIR("?",1)="Enter YES to delete "_$S(NUM=1:"this problem",1:"these problems")_" from the current patient's list."
- S DIR("?",2)="DO NOT use this option to remove problems from your currently"
- S DIR("?")="displayed view of the Problem List!!"
- W $C(7) D ^DIR
+ N DIR,X,Y,MSG
+ D:NUM=1 BLD^DIALOG(1250000.236,,,"MSG")
+ D:NUM'=1 BLD^DIALOG(1250000.237,NUM,,"MSG")
+ D EN^DDIOL(.MSG)
+ S DIR(0)="YA",DIR("B")="NO"
+ D BLD^DIALOG(1250000.238,,,"DIR(""A"")")
+ D BLD^DIALOG($S(NUM=1:1250000.239,1:250000.240),,,"DIR(""?"")")
+ D EN^DDIOL($C(7),,"?0")
+ D ^DIR
  Q +Y
  ;
 DELETE ; Remove current problem from patient's list
- N DELETED
+ N DELETED,MSG
  S VALMBCK=$S(VALMCC:"",1:"R")
  Q:'$$SUREDEL(1)
  S %=$$DELETE^GMPLAPI2(.DELETED,GMPIFN,+$G(GMPROV))
  I 'DELETED W $$ERRTXT^GMPLAPIE(DELETED) H 2 Q
  S GMPSAVED=1
  S VALMBCK="Q"
- W "...... removed!",!!,"Returning to Problem List.",! H 1
+ D BLD^DIALOG(1250000.241,,,"MSG")
+ D EN^DDIOL(.MSG)
+ H 1
  Q
  ;
 VERIFY ; Mark current problem as verified
- I GMPFLD(1.02)'="T" W $C(7),!!,"This problem does not require verification.",! H 1 Q
- S GMPFLD(1.02)="P" W !,"."
- W "... verified!" H 1
+ N MSG
+ I GMPFLD(1.02)'="T" D  H 1 Q
+ . D BLD^DIALOG(1250000.242,,,"MSG")
+ . D EN^DDIOL($C(7))
+ . D EN^DDIOL(.MSG)
+ S GMPFLD(1.02)="P" D EN^DDIOL(".")
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.243),,"?0") H 1
  Q
  ;
 NPERSON ; look up into #200, given PROMPT,HELPMSG,DEFAULT (returns X, Y)
  N DIC
-NP W !,PROMPT_$S(+DEFAULT:$P(DEFAULT,U,2)_"//",1:"")
- R X:DTIME S:'$T DTOUT=1 I $D(DTOUT)!(X="^") S GMPQUIT=1 Q
+NP N DIR
+ S DIR(0)="FA"
+ S DIR("A")=PROMPT_$S(+DEFAULT:$P(DEFAULT,U,2)_"//",1:"")
+ D ^DIR
+ I $D(DTOUT)!(X="^") S GMPQUIT=1 Q
  I X?1"^".E D JUMP^GMPLEDT3(X) Q:$D(GMPQUIT)!($G(GMPLJUMP))  K:$G(GMPIFN) GMPLJUMP G NP
  I X="" S Y=DEFAULT Q
  I X="@" G:'$$SURE^GMPLX NP S Y="" Q
  I X="?" W !!,HELPMSG,! G NP
  I X["??" D NPHELP G NP
  S DIC="^VA(200,",DIC(0)="EMQ" D ^DIC
- I Y'>0 W !!,HELPMSG,!,$C(7) G NP
+ I Y'>0 D  G NP
+ . D EN^DDIOL(HELPMSG,,"!!")
+ . D EN^DDIOL($C(7))
  Q
  ;
 NPHELP ; List names in New Person file
- N NM,CNT,I,Y S CNT=0,(NM,Y)="" W !,"Choose from: "
+ N NM,CNT,I,Y,DIR,X S CNT=0,(NM,Y)=""
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.244))
  F  S NM=$O(^VA(200,"B",NM)) Q:NM=""  D  Q:Y'=""
  . S CNT=CNT+1 I '(CNT#9) D  Q:Y="^"
- . . W "      ... more, or ^ to stop: " R Y:DTIME S:'$T Y="^"
- . S I=$O(^VA(200,"B",NM,0)) W !,"   "_$P($G(^VA(200,I,0)),U)
- W !
+ . . D BLD^DIALOG(1250000.245,,,"DIR(""A"")")
+ . . S DIR(0)="EA"
+ . . D ^DIR
+ . . S Y=X
+ . . S:$D(DTOUT) Y="^"
+ . S I=$O(^VA(200,"B",NM,0)) D EN^DDIOL("   "_$P($G(^VA(200,I,0)),U))
+ D EN^DDIOL("")
  Q
  ;
 DATE ; Edit date fields given PROMPT,HELPMSG,DEFAULT (ret'ns X,Y)
- N %DT S %DT="EP"
-D1 W !,PROMPT_$S(+DEFAULT:$P(DEFAULT,U,2)_"//",1:"")
- R X:DTIME S:'$T DTOUT=1 I $D(DTOUT)!(X="^") S GMPQUIT=1 Q
+ N %DT,DIR,MSG S %DT="EP"
+D1 ;
+ K DIR
+ S DIR(0)="DA"
+ S DIR("A")=PROMPT_$S(+DEFAULT:$P(DEFAULT,U,2)_"//",1:"")
+ D ^DIR
+ I $D(DTOUT)!(X="^") S GMPQUIT=1 Q
  I X?1"^".E D JUMP^GMPLEDT3(X) Q:$D(GMPQUIT)!($G(GMPLJUMP))  K:$G(GMPIFN) GMPLJUMP G D1
  I X="" S Y=DEFAULT Q
  I X="@" G:'$$SURE^GMPLX D1 S Y="" Q
  I X="?" W !!,HELPMSG,! G D1
  I X["??" D DTHELP G D1
- D ^%DT I Y<1 W "  INVALID DATE" D DTHELP W !,HELPMSG G D1
- I Y>DT W !!,"Date cannot be in the future!",!,$C(7) G D1
+ D ^%DT I Y<1 D  G D1
+ . D EN^DDIOL($$EZBLD^DIALOG(1250000.246))
+ . D DTHELP
+ . D EN^DDIOL(HELPMSG)
+ I Y>DT D  G D1
+ . D BLD^DIALOG(1250000.247,,,"MSG")
+ . D EN^DDIOL(.MSG)
+ . D EN^DDIOL($C(7))
  Q
  ;
 DTHELP ; Date help
- W !!,"Examples of valid dates:"
- W !,"   Jan 20 1957 or 20 Jan 57 or 1/20/57 or 012057"
- W !,"   T   (for TODAY),  T-1 (for YESTERDAY),  T-3W (for 3 WEEKS AGO), etc."
- W !,"You may omit the precise day, such as Jan 1957, or"
- W !,"If the year is omitted, a date in the PAST will be assumed.",!
+ N MSG
+ D BLD^DIALOG(1250000.248,,,"MSG")
+ D EN^DDIOL(.MSG)
  Q
  ;
 SPEXP ; Edit Fields 1.11, 1.12, 1.13, 1.15, 1.16, 1.17, 1.18
- D:GMPAGTOR SP(1.11,"Agent Orange") Q:$D(GMPQUIT)!($G(GMPLJUMP))
+ D:GMPAGTOR SP(1.11,1250000.249) Q:$D(GMPQUIT)!($G(GMPLJUMP))
  S:$G(GMPFLD(1.11)) $P(GMPFLD(1.11),U,2)="AGENT ORANGE"
- D:GMPION SP(1.12,"Radiation") Q:$D(GMPQUIT)!($G(GMPLJUMP))
+ D:GMPION SP(1.12,1250000.250) Q:$D(GMPQUIT)!($G(GMPLJUMP))
  S:$G(GMPFLD(1.12)) $P(GMPFLD(1.12),U,2)="RADIATION"
- D:GMPGULF SP(1.13,"Environmental Contaminants") Q:$D(GMPQUIT)!($G(GMPLJUMP))
+ D:GMPGULF SP(1.13,1250000.251) Q:$D(GMPQUIT)!($G(GMPLJUMP))
  S:$G(GMPFLD(1.13)) $P(GMPFLD(1.13),U,2)="ENV CONTAMINANTS"
- D:GMPHNC SP(1.15,"Head and/or Neck Cancer") Q:$D(GMPQUIT)!($G(GMPLJUMP))
+ D:GMPHNC SP(1.15,1250000.252) Q:$D(GMPQUIT)!($G(GMPLJUMP))
  S:$G(GMPFLD(1.15)) $P(GMPFLD(1.15),U,2)="HEAD/NECK CANCER"
- D:GMPMST SP(1.16,"Military Sexual Trauma") Q:$D(GMPQUIT)!($G(GMPLJUMP))
+ D:GMPMST SP(1.16,1250000.253) Q:$D(GMPQUIT)!($G(GMPLJUMP))
  S:$G(GMPFLD(1.16)) $P(GMPFLD(1.16),U,2)="MIL SEXUAL TRAUMA"
- D:GMPCV SP(1.17,"Combat Veteran") Q:$D(GMPQUIT)!($G(GMPLJUMP))
+ D:GMPCV SP(1.17,1250000.254) Q:$D(GMPQUIT)!($G(GMPLJUMP))
  S:$G(GMPFLD(1.17)) $P(GMPFLD(1.17),U,2)="COMBAT VET"
- D:GMPSHD SP(1.18,"Shipboard Hazard and Defense") Q:$D(GMPQUIT)!($G(GMPLJUMP))
+ D:GMPSHD SP(1.18,1250000.255) Q:$D(GMPQUIT)!($G(GMPLJUMP))
  S:$G(GMPFLD(1.18)) $P(GMPFLD(1.18),U,2)="SHAD"
  Q
 SP(FLD,NAME) ; edit exposure fields -- Requires FLD number & field NAME
- N DIR,X,Y,GMPLN S DIR(0)="YAO",GMPLN=$$UP^XLFSTR(NAME)
- S DIR("A")="Is this problem related to "_GMPLN
- S:GMPLN'["SEXUAL"&(GMPLN'["CANCER") DIR("A")=DIR("A")_" EXPOSURE" S DIR("A")=DIR("A")_"? "
- S DIR("?",1)="Enter YES if this problem is related in some way to the patient's"
- S DIR("?")="diagnosed "_NAME_"." S:GMPLN["SEXUAL" DIR("?")="reported "_NAME_"." S:GMPLN'["SEXUAL"&(GMPLN'["CANCER") DIR("?")="exposure to "_NAME_"."
+ N DIR,X,Y,GMPLN S DIR(0)="YAO" ;,GMPLN=$$UP^XLFSTR(NAME)
+ D BLD^DIALOG(NAME,,,"DIR(""A"")")
+ D BLD^DIALOG(NAME+.007,,,"DIR(""?"")")
  S:$L($G(GMPFLD(FLD))) DIR("B")=$S(+GMPFLD(FLD):"YES",1:"NO")
 SP1 D ^DIR I $D(DTOUT)!(Y="^") S GMPQUIT=1 Q
  I Y?1"^".E D JUMP^GMPLEDT3(Y) Q:$D(GMPQUIT)!($G(GMPLJUMP))  K:$G(GMPIFN) GMPLJUMP G SP1

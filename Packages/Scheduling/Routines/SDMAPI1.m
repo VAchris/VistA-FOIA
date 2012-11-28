@@ -1,4 +1,4 @@
-SDMAPI1 ;RGI/CBR - APPOINTMENT API; 10/26/2012
+SDMAPI1 ;RGI/VSL - APPOINTMENT API; 11/09/2012
  ;;5.3;scheduling;**260003**;08/13/93
 CLNCK(RETURN,CLN) ;Check clinic for valid stop code restriction.
  ;  INPUT:   CLN   = IEN of Clinic
@@ -76,7 +76,7 @@ CLNVSC(RETURN,SC) ; Verifies clinic stop code validation
  D GETCSC^SDMDAL1(.DATA,+SC)
  I $S('$D(DATA):1,'DATA(2):0,1:$G(DATA(2))'>DT) D  Q RETURN
  . S TEXT(1)=+SC
- . D ERRX^SDAPIE(.RETURN,"CLNSCIN",.TEXT) 
+ . D ERRX^SDAPIE(.RETURN,"CLNSCIN",.TEXT)
  . S RETURN=0
  S RETURN=1
  Q RETURN
@@ -137,7 +137,7 @@ GETELIG(RETURN,ELIG) ; Returns Eligibility Code detail
  Q 1
  ;
 GETPEND(RETURN,DFN,DT) ; Get pending appointments
- N CNT,SCAP,APP,CLN
+ N CNT,SCAP,APP,CLN,%
  S CNT=""
  D GETPEND^SDMDAL2(.APP,DFN,DT)
  F  S CNT=$O(APP(CNT)) Q:CNT=""  D
@@ -146,9 +146,9 @@ GETPEND(RETURN,DFN,DT) ; Get pending appointments
  . S RETURN(CNT,"LAB")=APP(CNT,2)
  . S RETURN(CNT,"XRAY")=APP(CNT,3)
  . S RETURN(CNT,"EKG")=APP(CNT,4)
- . D GETCLN^SDMAPI1(.CLN,APP(CNT,.01))
+ . S %=$$GETCLN^SDMAPI1(.CLN,APP(CNT,.01))
  . S RETURN(CNT,"CLINIC")=$P(CLN("NAME"),U,2)
- . D GETSCAP^SDMAPI1(.SCAP,APP(CNT,.01),DFN,CNT)
+ . S %=$$GETSCAP^SDMAPI1(.SCAP,APP(CNT,.01),DFN,CNT)
  . S RETURN(CNT,"LENGTH OF APP'T")=$G(SCAP("LENGTH"))
  . S RETURN(CNT,"CONSULT LINK")=$G(SCAP("CONSULT"))
  S RETURN=($D(RETURN)>0)
@@ -275,4 +275,26 @@ PTFU(RETURN,DFN,SC)    ;Determine if this is a follow-up (return to clinic withi
  . S SDY=SDCP=SDCP1  ;compare credit pairs
  . Q
  Q SDY
+ ;
+HASPEND(RETURN,DFN,DT) ; Check if patient has panding appointments
+ D HASPEND^SDMDAL2(.RETURN,DFN,DT)
+ Q 1
+ ;
+LSTSRT(RETURN) ;List scheduling request types
+ K RETURN
+ S RETURN=1
+ D LSTSCOD^SDMDAL(2.98,25,.RETURN)
+ Q 1
+ ;
+LSTAPPST(RETURN) ;List appointment statuses
+ K RETURN
+ S RETURN=1
+ D LSTSCOD^SDMDAL(2.98,3,.RETURN)
+ Q 1
+ ;
+LSTHLTP(RETURN) ;List hospital location types
+ K RETURN
+ S RETURN=1
+ D LSTSCOD^SDMDAL(44,2,.RETURN)
+ Q 1
  ;

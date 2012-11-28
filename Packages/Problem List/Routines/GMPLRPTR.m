@@ -6,19 +6,22 @@ EN ; -- main entry point
  D WAIT^DICD
  K GMPLIST
  S %=$$GETPLIST^GMPLAPI4(.GMPLIST,+GMPDFN,"R")
- I GMPLIST(0)'>0 W $C(7),!!?10,"No 'removed' problems found for this patient.",! Q
+ I GMPLIST(0)'>0 D  Q
+ . D EN^DDIOL($C(7))
+ . D EN^DDIOL($$EZBLD^DIALOG(1250000.431),,"!?10")
+ . D EN^DDIOL("")
  D DISPLAY,REPLACE
  K GMPDFN,GMPLIST
  Q
  ;
 DISPLAY ; -- show list on screen
- N PROBLEM,DATE,USER,NUM,PROV,IDT,AIFN,NODE,DONE,GMPQUIT D HDR
+ N PROBLEM,DATE,USER,NUM,PROV,IDT,AIFN,NODE,DONE,GMPQUIT,% D HDR
  F NUM=0:0 S NUM=$O(GMPLIST(NUM)) Q:NUM'>0  D  Q:$D(GMPQUIT)
  . S IFN=GMPLIST(NUM) Q:'IFN
  . S PROBLEM=$$PROBTEXT^GMPLX(IFN),(DATE,PROV)="" K DONE
  . ; added for Code Set Versioning (CSV)
  . I '$$CODESTS^GMPLX(IFN,DT) S PROBLEM="#"_PROBLEM
- . D AUDITX^GMPLHIST(.RETURN,IFN,1.02,"H")
+ . S %=$$AUDITX^GMPLHIST(.RETURN,IFN,1.02,"H")
  . I RETURN>0 D
  . . S DATE=RETURN(1,"MODIFIED")
  . . S PROV=RETURN(1,"REQUESTINGBY")
@@ -29,25 +32,34 @@ DISPLAY ; -- show list on screen
  Q
  ;
 HDR ; -- header code
- W @IOF,"REMOVED PROBLEMS FOR "_$P(GMPDFN,U,2)_" ("_$P(GMPDFN,U,3)_"):"
- W !!,"    Problem",?51,"Removed  By Whom",!,$$REPEAT^XLFSTR("-",79)
+ N PARAM
+ W @IOF
+ S PARAM(1)=$P(GMPDFN,U,2),PARAM(2)=$P(GMPDFN,U,3)
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.432,.PARAM),,"?0")
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.433),,"!!")
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.434),,"?51")
+ D EN^DDIOL($$REPEAT^XLFSTR("-",79))
  Q
  ;
 CONTINUE() ; -- end of page prompt
  N DIR,X,Y
- S DIR(0)="E",DIR("A")="Press <return> to continue or ^ to exit ..."
+ S DIR(0)="E"
+ D BLD^DIALOG(1250000.435,,,"DIR(""A"")")
  D ^DIR
  Q +Y
  ;
 REPLACE ; -- replace problem on patient's list
- N GMPLSEL,GMPLNO,NUM,DA,%,RET
+ N GMPLSEL,GMPLNO,NUM,DA,%,RET,MSG
  W !!
  S GMPLSEL=$$SEL Q:GMPLSEL="^"  Q:'$$SURE
- W !!,"Replacing problem(s) on patient's list ..."
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.436),,"!!")
  S GMPLNO=$L(GMPLSEL,",")
  F I=1:1:GMPLNO S NUM=$P(GMPLSEL,",",I) I NUM D
  . ; added for Code Set Versioning (CSV)
- . I '$$CODESTS^GMPLX(GMPLIST(NUM),DT) W !!,$$PROBTEXT^GMPLX(GMPLIST(NUM)),!,"has an inactive ICD9 code and will not be replaced." Q
+ . I '$$CODESTS^GMPLX(GMPLIST(NUM),DT) D  Q
+ . . K MSG
+ . . D BLD^DIALOG(1250000.437,$$PROBTEXT^GMPLX(GMPLIST(NUM)),,"MSG")
+ . . D EN^DDIOL(.MSG)
  . S DA=GMPLIST(NUM)
  . S %=$$UNDELETE^GMPLAPI4(.RET,DA)
  . W !,"  "_$$PROBTEXT^GMPLX(DA)
@@ -58,14 +70,17 @@ REPLACE ; -- replace problem on patient's list
 SEL() ; -- select problem(s)
  N DIR,X,Y,MAX
  S MAX=+GMPLIST(0) I MAX'>0 Q "^"
- S DIR(0)="LAO^1:"_MAX,DIR("A")="Select the problem(s) you wish to replace on this patient's list: "
- S DIR("?",1)="Enter the problems you wish to add back on this patient's problem list,",DIR("?")="as a range or list of numbers."
+ S DIR(0)="LAO^1:"_MAX
+ D BLD^DIALOG(1250000.438,,,"DIR(""A"")")
+ D BLD^DIALOG(1250000.439,,,"DIR(""?"")")
  D ^DIR I $D(DTOUT)!(X="") S Y="^"
  Q Y
  ;
 SURE() ; -- are you sure you want to do this?
  N DIR,X,Y
- S DIR(0)="Y",DIR("A")="Are you sure you want to do this",DIR("B")="NO"
- S DIR("?",1)="Enter YES if you are ready to have the selected problems put back on this",DIR("?")="patient's problem list; press <return> to exit without further action."
- W $C(7) D ^DIR
+ S DIR(0)="Y",DIR("B")="NO"
+ D BLD^DIALOG(1250000.440,,,"DIR(""A"")")
+ D BLD^DIALOG(1250000.441,,,"DIR(""?"")")
+ D EN^DDIOL($C(7),,"?0")
+ D ^DIR
  Q +Y

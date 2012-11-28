@@ -18,7 +18,9 @@ GMPLX1 ; SLC/MKB/KER -- Problem List Person Utilities ;09/14/12
 PAT() ; Select patient -- returns DFN^NAME^BID
  N DIC,X,Y,DFN,VADM,VA,PAT
 P1 S DIC="^AUPNPAT(",DIC(0)="AEQM" D ^DIC I +Y<1 Q -1
- I $P(Y,U,2)'=$$PATNAME^GMPLEXT(+Y) W $C(7),!!,"ERROR -- Please check your Patient Files #2 and #9000001 for inconsistencies.",! G P1
+ I $P(Y,U,2)'=$$PATNAME^GMPLEXT(+Y) D  G P1
+ . D EN^DDIOL($C(7))
+ . D EN^DDIOL($$EZBLD^DIALOG(1250000.498))
  S DFN=+Y,PAT=Y D DEM^VADPT
  S PAT=PAT_U_$E($P(PAT,U,2))_VA("BID"),AUPNSEX=$P(VADM(5),U)
  I VADM(6) S PAT=PAT_U_+VADM(6) ; date of death
@@ -96,17 +98,18 @@ SCCOND(DFN,SC) ; Get Service/Elig Flags (array)
  ;
 CKDEAD(DATE) ; Dead patient ... continue?  Returns 1 if YES, 0 otherwise
  N DIR,X,Y S DIR(0)="YA",DIR("B")="NO"
- S DIR("A")="Are you sure you want to continue? "
- S DIR("?",1)="   Enter YES to continue and add new problem(s) for this patient:",DIR("?")="   press <return> to select another action."
- W $C(7),!!,"DATE OF DEATH: "_$$EXTDT^GMPLX(DATE)
+ D BLD^DIALOG(1250000.489,,,"DIR(""A"")")
+ D BLD^DIALOG(1250000.499,,,"DIR(""?"")")
+ D EN^DDIOL($C(7))
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.500,$$EXTDT^GMPLX(DATE)))
  D ^DIR
  Q +Y
  ;
 REQPROV() ; Returns requesting provider
  N DIR,X,Y
  I $D(GMPLUSER) S Y=DUZ_U_$$PROVNAME^GMPLEXT(DUZ) Q Y
- S DIR("?")="Enter the name of the provider responsible for this data."
- S DIR(0)="PA^200:AEQM",DIR("A")="Provider: "
+ D BLD^DIALOG(1250000.501,,,"DIR(""?"")")
+ S DIR(0)="PA^200:AEQM",DIR("A")=$$EZBLD^DIALOG(1250000.508)
  S:$G(GMPROV) DIR("B")=$P(GMPROV,U,2) W ! D ^DIR
  I $D(DUOUT)!($D(DTOUT))!(+Y'>0) Q -1
  Q Y
@@ -128,26 +131,22 @@ SERV(X) ; Return service name abbreviation
  ;
 CLINIC(LAST) ; Returns clinic from file #44
  N X,Y,DIC,DIR S Y="" G:$E(GMPLVIEW("VIEW"))="S" CLINQ
- S DIR(0)="FAO^1:30",DIR("A")="Clinic: " S:$L(LAST) DIR("B")=$P(LAST,U,2)
- S DIR("?")="Enter the clinic to be associated with these problems, if available"
+ S DIR(0)="FAO^1:30",DIR("A")=$$EZBLD^DIALOG(1250000.502) S:$L(LAST) DIR("B")=$P(LAST,U,2)
+ D BLD^DIALOG(1250000.503,,,"DIR(""?"")")
  S DIR("??")="^D LISTCLIN^GMPLMGR1 W !,DIR(""?"")_""."""
 CLIN1 ; Ask Clinic
  D ^DIR S:$D(DUOUT)!($D(DTOUT)) Y="^" S:Y="@" Y="" G:("^"[Y) CLINQ
  S DIC="^SC(",DIC(0)="EMQ",DIC("S")="I $P(^(0),U,3)=""C"""
- D ^DIC I Y'>0 W !?5,"Only clinics are allowed!",! G CLIN1
+ D ^DIC I Y'>0 D  G CLIN1
+ . D EN^DDIOL($$EZBLD^DIALOG(1250000.504),,"!?5")
+ . D EN^DDIOL("")
 CLINQ ; Quit Asking
  Q Y
  ;
 VOCAB() ; Select search vocabulary
  N DIR,X,Y S DIR(0)="SAOM^N:NURSING;I:IMMUNOLOGIC;D:DENTAL;S:SOCIAL WORK;P:GENERAL PROBLEM"
- S DIR("A")="Select Specialty Subset: ",DIR("B")="GENERAL PROBLEM"
- S DIR("?",1)="Because many discipline-specific terms are synonyms to other terms,"
- S DIR("?",2)="they are not accessible unless you specify the appropriate subset of the"
- S DIR("?",3)="Clinical Lexicon to select from.  Choose from:  Nursing"
- S DIR("?",4)=$$REPEAT^XLFSTR(" ",48)_"Immunologic"
- S DIR("?",5)=$$REPEAT^XLFSTR(" ",48)_"Dental"
- S DIR("?",6)=$$REPEAT^XLFSTR(" ",48)_"Social Work"
- S DIR("?")=$$REPEAT^XLFSTR(" ",48)_"General Problem"
+ S DIR("A")=$$EZBLD^DIALOG(1250000.505),DIR("B")="GENERAL PROBLEM"
+ D BLD^DIALOG(1250000.506,,,"DIR(""?"")")
  D ^DIR S X=$S(Y="N":"NUR",Y="I":"IMM",Y="D":"DEN",Y="S":"SOC",Y="P":"PL1",1:"^")
  Q X
  ;

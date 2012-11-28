@@ -8,19 +8,23 @@ EN ; -- main entry point for GMPL SELECTION GROUP BUILD
  Q
  ;
 HDR ; -- header code
- N NAME,NUM,DATE S NUM=+^TMP("GMPLST",$J,0)_" problem"_$S(+^TMP("GMPLST",$J,0)'=1:"s",1:"")
- S DATE="Last Modified: "_^TMP("GMPLIST",$J,"CAT","MODIFIED")
+ N NAME,NUM,DATE S NUM=+^TMP("GMPLST",$J,0)_$S(+^TMP("GMPLST",$J,0)'=1:$$EZBLD^DIALOG(1250000.055),1:$$EZBLD^DIALOG(1250000.057))
+ S DATE=$$EZBLD^DIALOG(1250000.038)_^TMP("GMPLIST",$J,"CAT","MODIFIED")
  S VALMHDR(1)=DATE_$J(NUM,79-$L(DATE))
  S NAME=^TMP("GMPLIST",$J,"CAT","NAME"),VALMHDR(2)=$J(NAME,$L(NAME)\2+41)
  Q
  ;
 INIT ; -- init variables and list array
- N RETURN
+ N RETURN,MSG
  S GMPLGRP=$$GROUP^GMPLBLD2("L") I GMPLGRP="^" S VALMQUIT=1 Q
  I '$$LOCKCAT^GMPLAPI1(.RETURN,GMPLGRP) D  G INIT
- . W $C(7),!!,"This category is currently being edited by another user!",!
+ . D EN^DDIOL($C(7))
+ . D BLD^DIALOG(1250000.073,,,"MSG")
+ . D EN^DDIOL(.MSG)
  S GMPLMODE="E",VALMSG=$$MSG^GMPLX
- W !,"Searching for the problems ..."
+ K MSG
+ D BLD^DIALOG(1250000.126,,,"MSG")
+ D EN^DDIOL(.MSG)
  D GETLIST,BUILD("^TMP(""GMPLIST"",$J)",GMPLMODE)
  Q
  ;
@@ -33,7 +37,7 @@ GETLIST ; Build ^TMP("GMPLIST",$J,#) of problems
  ;
 BUILD(LIST,MODE) ; Build ^TMP("GMPLST",$J,) of current items in LIST for display
  N SEQ,LCNT,NUM,PROB,TEXT,IFN,ITEM,CODE D CLEAN^VALM10
- I $P($G(^TMP("GMPLIST",$J,0)),U,1)'>0 S ^TMP("GMPLST",$J,1,0)="   ",^TMP("GMPLST",$J,2,0)="No items available.",^TMP("GMPLST",$J,0)="0^2",VALMCNT=2 Q
+ I $P($G(^TMP("GMPLIST",$J,0)),U,1)'>0 S ^TMP("GMPLST",$J,1,0)="   ",^TMP("GMPLST",$J,2,0)=$$EZBLD^DIALOG(1250000.127),^TMP("GMPLST",$J,0)="0^2",VALMCNT=2 Q
  S (LCNT,NUM,SEQ)=0
  F  S SEQ=$O(^TMP("GMPLIST",$J,"SEQ",SEQ)) Q:SEQ'>0  D
  . S IFN=^TMP("GMPLIST",$J,"SEQ",SEQ),LCNT=LCNT+1,NUM=NUM+1,CODE=""
@@ -44,22 +48,17 @@ BUILD(LIST,MODE) ; Build ^TMP("GMPLST",$J,) of current items in LIST for display
  .. S ^TMP("GMPLST",$J,LCNT,0)=^TMP("GMPLST",$J,LCNT,0)_" ("_$P(CODE,U,1)_")"
  .. S FLAG=$P(CODE,U,2)
  .. Q:$G(FLAG)="0"  ; code is active
- .. S ^TMP("GMPLST",$J,LCNT,0)=^TMP("GMPLST",$J,LCNT,0)_"    <INACTIVE CODE>"
+ .. S ^TMP("GMPLST",$J,LCNT,0)=^TMP("GMPLST",$J,LCNT,0)_$$EZBLD^DIALOG(1250000.128)
  . D CNTRL^VALM10(LCNT,9,5,IOINHI,IOINORM)
  . S ^TMP("GMPLST",$J,"B",NUM)=IFN
  S ^TMP("GMPLST",$J,0)=NUM_U_LCNT,VALMCNT=LCNT
  Q
  ;
 HELP ; -- help code
- N X
- W !!?4,"You may take a variety of actions from this prompt.  To update"
- W !?4,"this category you may add new problems or remove an existing"
- W !?4,"one; you may also change the text or code displayed, or the order"
- W !?4,"in which each problem is displayed.  Select View w/wo Seq Numbers"
- W !?4,"to toggle seeing the sequence number in addition to the display"
- W !?4,"number per problem.  If necessary, the current category may be"
- W !?4,"deleted; you may change to a different category to continue editing."
- W !!,"Press <return> to continue ..." R X:DTIME
+ N X,MSG
+ D BLD^DIALOG(1250000.129,,,"MSG")
+ D EN^DDIOL(.MSG)
+ R X:DTIME
  S VALMSG=$$MSG^GMPLX,VALMBCK=$S(VALMCC:"",1:"R")
  Q
  ;
@@ -76,7 +75,7 @@ ADD ; Add new problem(s)
  N X,Y,SEQ,CODE,IFN,GMPVOCAB,GMPQUIT,GMPREBLD S VALMBCK=""
  S GMPVOCAB=$$VOCAB^GMPLX1 Q:GMPVOCAB="^"
  F  D  Q:$D(GMPQUIT)  W !!
- . S (X,Y)="" D SEARCH^GMPLX(.X,.Y,"PROBLEM: ","1",GMPVOCAB)
+ . S (X,Y)="" D SEARCH^GMPLX(.X,.Y,$$EZBLD^DIALOG(1250000.130),"1",GMPVOCAB)
  . I +Y'>0 S GMPQUIT=1 Q
  . S X=$$TEXT^GMPLBLD1(X) I X="^" S GMPQUIT=1 Q
  . S CODE=$$CODE^GMPLBLD1($G(Y(1))) I CODE="^" S GMPQUIT=1 Q
@@ -91,25 +90,37 @@ ADD ; Add new problem(s)
  Q
  ;
 REMOVE ; Remove problem from group
- N NUM,IFN S VALMBCK=""
+ N NUM,IFN,MSG S VALMBCK=""
  S NUM=$$SEL1^GMPLBLD1 G:NUM="^" RMQ
  S IFN=$P($G(^TMP("GMPLST",$J,"B",NUM)),U,1) G:+IFN'>0 RMQ
- I "@"[$G(^TMP("GMPLIST",$J,IFN)) W $C(7),!!,"Problem does not exist in this category!" H 2 G RMQ
- I '$$SURE^GMPLX W !?5,"< Nothing removed! >" H 1 G RMQ
+ I "@"[$G(^TMP("GMPLIST",$J,IFN)) D  H 2 G RMQ
+ . D EN^DDIOL($C(7))
+ . D BLD^DIALOG(1250000.131,,,"MSG")
+ . D EN^DDIOL(.MSG)
+ I '$$SURE^GMPLX D  H 1 G RMQ
+ . D BLD^DIALOG(1250000.132,,,"MSG")
+ . D EN^DDIOL(.MSG)
  D DELETE^GMPLBLD1(IFN) S VALMBCK="R",GMPLSAVE=1
  D BUILD("^TMP(""GMPLIST"",$J)",GMPLMODE),HDR
 RMQ S:'VALMCC VALMBCK="R" S VALMSG=$$MSG^GMPLX
  Q
  ;
 EDIT ; Edit problem text and code
- N NUM,SEL,IFN,PIECE,CODE,PROB,PROBLEM,GMPQUIT,GMPREBLD S VALMBCK=""
+ N NUM,SEL,IFN,PIECE,CODE,PROB,PROBLEM,GMPQUIT,GMPREBLD,MSG S VALMBCK=""
  S SEL=$$SEL^GMPLBLD1 G:SEL="^" EDQ
  F PIECE=1:1:$L(SEL,",") D  Q:$D(GMPQUIT)  W !
  . S NUM=$P(SEL,",",PIECE) Q:NUM'>0
  . S IFN=$P($G(^TMP("GMPLST",$J,"B",NUM)),U,1) Q:IFN'>0
- . I "@"[$G(^TMP("GMPLIST",$J,IFN)) W $C(7),!!,"Problem #"_NUM_" does not exist in this category!" H 2 Q
- . W !!,">>>  Problem #"_NUM S PROBLEM=^TMP("GMPLIST",$J,IFN)
- . W:$P(PROBLEM,U,2)>1 " = "_$$CONTEXT^GMPLEXT(+$P(PROBLEM,U,2)) W ! ; KER
+ . I "@"[$G(^TMP("GMPLIST",$J,IFN)) D  H 2 Q
+ . . D EN^DDIOL($C(7))
+ . . K MSG
+ . . D BLD^DIALOG(1250000.133,NUM,,"MSG")
+ . . D EN^DDIOL(.MSG)
+ . K MSG
+ . D BLD^DIALOG(1250000.134,NUM,,"MSG")
+ . D EN^DDIOL(.MSG)
+ . S PROBLEM=^TMP("GMPLIST",$J,IFN)
+ . D:$P(PROBLEM,U,2)>1 EN^DDIOL(" = "_$$CONTEXT^GMPLEXT(+$P(PROBLEM,U,2))) ; KER
  . S PROB=$$TEXT^GMPLBLD1($P(PROBLEM,U,3)) I PROB="^" S GMPQUIT=1 Q
  . I PROB="@" D DELETE^GMPLBLD1(IFN) S GMPREBLD=1 Q
  . S CODE=$$CODE^GMPLBLD1($P(PROBLEM,U,4)) I CODE="^" S GMPQUIT=1 Q

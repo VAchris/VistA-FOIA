@@ -1,14 +1,19 @@
 GMPLPRF1 ; SLC/MKB -- Problem List User Prefs cont ;09/20/12
  ;;2.0;Problem List;**3,260002**;Aug 25, 1994
 ADD ; -- add item(s) to view
- N GMPLSEL,GMPLNO,IFN,NUM,CNUM,I,J S VALMBCK=$S(VALMCC:"",1:"R")
+ N GMPLSEL,GMPLNO,IFN,NUM,CNUM,I,J,MSG,PARAM S VALMBCK=$S(VALMCC:"",1:"R")
 ADD1 S GMPLSEL=$$SELECT Q:GMPLSEL="^"
- S GMPLNO=$L(GMPLSEL,","),I=$S(GMPLMODE="S":"service",1:"clinic")
+ S GMPLNO=$L(GMPLSEL,","),I=$S(GMPLMODE="S":1250000.382,1:1250000.383)
  I (^TMP("GMPLIST",$J,"VIEW",0)+GMPLNO-1)>60 D  G ADD1
- . W !!,"You may not have more than 60 "_I_"s included in your view!"
- . W !,"Your view currently includes "_^TMP("GMPLIST",$J,"VIEW",0)_" "_I_$S(^TMP("GMPLIST",$J,"VIEW",0)'=1:"s",1:"")_"."
- . W !,"Please select again, choosing no more than "_(60-^TMP("GMPLIST",$J,"VIEW",0))_" "_I_$S(^TMP("GMPLIST",$J,"VIEW",0)'=1:"s",1:"")_"."
-ADD2 W !!,"Adding "_(GMPLNO-1)_" "_I_"(s) ..." K I
+ . K MSG
+ . S PARAM(1)=^TMP("GMPLIST",$J,"VIEW",0),PARAM(2)=60-^TMP("GMPLIST",$J,"VIEW",0)
+ . D BLD^DIALOG(I,.PARAM,,"MSG")
+ . D EN^DDIOL(.MSG)
+ADD2 ;
+ S I=$S(GMPLMODE="S":1250000.387,1:1250000.388)
+ D BLD^DIALOG(I,GMPLNO-1,,"MSG")
+ D EN^DDIOL($$EZBLD^DIALOG(I,GMPLNO-1),,"!!")
+ K I
  N CHLD
  F I=1:1:GMPLNO S NUM=$P(GMPLSEL,",",I) I NUM D
  . S IFN=^TMP("GMPLIST",$J,"IDX",NUM) W "."
@@ -24,10 +29,11 @@ ADD2 W !!,"Adding "_(GMPLNO-1)_" "_I_"(s) ..." K I
  Q
  ;
 REMOVE ; -- delete item(s) from view
- N GMPLSEL,GMPLNO,IFN,NUM,CNUM,I,J,CHLD S VALMBCK=$S(VALMCC:"",1:"R")
+ N GMPLSEL,GMPLNO,IFN,NUM,CNUM,I,J,CHLD,MSG S VALMBCK=$S(VALMCC:"",1:"R")
  S GMPLSEL=$$SELECT Q:GMPLSEL="^"
  S GMPLNO=$L(GMPLSEL,",")
- W !!,"Removing "_(GMPLNO-1)_" "_$S(GMPLMODE="S":"service",1:"clinic")_"(s) ..."
+ S MSG=$S(GMPLMODE="S":1250000.389,1:1250000.390)
+ D EN^DDIOL($$EZBLD^DIALOG(MSG,GMPLNO-1),,"!!")
  F I=1:1:GMPLNO S NUM=$P(GMPLSEL,",",I) I NUM D
  . S IFN=+^TMP("GMPLIST",$J,"IDX",NUM),^TMP("GMPLIST",$J,NUM,0)=$E(^TMP("GMPLIST",$J,NUM,0),1,44)
  . S:$D(^TMP("GMPLIST",$J,"VIEW",IFN)) ^TMP("GMPLIST",$J,"VIEW",0)=^TMP("GMPLIST",$J,"VIEW",0)-1
@@ -43,21 +49,22 @@ REMOVE ; -- delete item(s) from view
  ;
 INCLCHLD(IFN) ; Returns 1 or 0, to include 'child' services in selection
  N DIR,X,Y,NAME S NAME=$$SVCNAME^GMPLEXT(IFN),DIR("B")="YES"
- S DIR(0)="Y",DIR("A")="Include all sub-services/sections of "_NAME
- S DIR("?",1)="This service is a 'parent' to other services/sections,"
- S DIR("?",2)="listed indented above; enter YES to include all of these"
- S DIR("?")="as well in this action, or enter NO to exclude them."
+ S DIR(0)="Y"
+ D BLD^DIALOG(1250000.391,NAME,,"DIR(""A"")")
+ D BLD^DIALOG(1250000.392,,,"DIR(""?"")")
  D ^DIR S:$D(DTOUT) Y="^"
  Q Y
  ;
 SELECT() ; Select item(s) from list
- N DIR,X,Y,MAX
+ N DIR,X,Y,MAX,MSG
  S MAX=+$G(^TMP("GMPLIST",$J,0)) I MAX'>0 Q "^"
  S DIR(0)="LAO^1:"_MAX
- S DIR("A")="Select "_$S(GMPLMODE="S":"Service",1:"Clinic")
+ S MSG=$S(GMPLMODE="S":1250000.393,1:1250000.394)
+ D BLD^DIALOG(MSG,,,"DIR(""A"")")
  S:MAX>1 DIR("A")=DIR("A")_" (1-"_MAX_"): "
  S:MAX'>1 DIR("A")=DIR("A")_": ",DIR("B")=1
- S DIR("?")="Enter the display number of the "_$S(GMPLMODE="S":"service",1:"clinic")_"(s) you wish to select"
+ S MSG=$S(GMPLMODE="S":1250000.395,1:1250000.396)
+ D BLD^DIALOG(MSG,,,"DIR(""?"")")
  D ^DIR I $D(DTOUT)!(X="") S Y="^"
  Q Y
  ;
@@ -76,27 +83,26 @@ SAVE ; -- save new view in File #200/Field #125
  Q
  ;
 SWITCH ; -- change preferred views (service <--> clinic)
- N DIR,X,Y S Y=1,VALMBCK=$S(VALMCC:"",1:"R")
+ N DIR,X,Y,MSG S Y=1,VALMBCK=$S(VALMCC:"",1:"R")
  G SW1:'$L($G(GMPLVIEW)) ; no current view
- S DIR(0)="Y",DIR("A")="Are you sure this is ok",DIR("B")="NO"
- S DIR("?",1)="You may have only one preferred view at a time."
- S DIR("?",2)="Enter YES to change how your preferred view is defined,"
- S DIR("?")="or press <return> to keep the view you currently have."
- W !!,">>>  This action will clear your current view of problems by "
- W $S(GMPLMODE="S":"service",1:"clinic")
- W !?5,"and present a list of "_$S(GMPLMODE="S":"clinics",1:"services")
- W " to replace it with.",! D ^DIR
+ S DIR(0)="Y",DIR("B")="NO"
+ D BLD^DIALOG(1250000.397,,,"DIR(""A"")")
+ D BLD^DIALOG(1250000.398,,,"DIR(""?"")")
+ D BLD^DIALOG($S(GMPLMODE="S":1250000.399,1:1250000.400),,,"MSG")
+ D EN^DDIOL(.MSG)
+ D ^DIR
 SW1 I Y D
  . S VALMBCK="R",GMPLVIEW="",GMPLMODE=$S(GMPLMODE="S":"C",1:"S")
  . D @("GET"_GMPLMODE_"LIST^GMPLPREF") K VALMHDR
  Q
  ;
 DELETE ; -- delete preferred view (no view)
- N DIR,X,Y S DIR(0)="Y",DIR("B")="NO",VALMBCK=$S(VALMCC:"",1:"R")
- S DIR("A")="Are you sure you want to delete your preferred view"
- S DIR("?",1)="Enter YES to remove your preferred view; the default view of Outpatient,",DIR("?",2)="including all active problems, will be used to display problem information.",DIR("?")="Enter NO to continue editing your current view."
+ N DIR,X,Y,MSG S DIR(0)="Y",DIR("B")="NO",VALMBCK=$S(VALMCC:"",1:"R")
+ D BLD^DIALOG(1250000.401,,,"DIR(""A"")")
+ D BLD^DIALOG(1250000.402,,,"DIR(""?"")")
  D ^DIR I Y D
- . W !!,"Deleting preferred view of "_$S(GMPLMODE="S":"services",1:"clinics")_" ..."
+ . S MSG=$S(GMPLMODE="S":1250000.403,1:1250000.404)
+ . D EN^DDIOL(MSG,,"!!")
  . K ^TMP("GMPLIST",$J,"VIEW") S ^TMP("GMPLIST",$J,"VIEW",0)=0,VALMBCK="Q",GMPLMODE=""
- . D SAVE W " done."
+ . D SAVE D EN^DDIOL($$EZBLD^DIALOG(1250000.095),,"?0")
  Q

@@ -1,9 +1,9 @@
-SDMDAL2 ;RGI/CBR - APPOINTMENT API; 09/19/2012
+SDMDAL2 ;RGI/VSL - APPOINTMENT API; 11/09/2012
  ;;5.3;scheduling;**260003**;08/13/93;
 FRSTAVBL(RETURN,SC) ; Get first available date
  S RETURN=$O(^SC(+SC,"T",0))
  S RETURN=$O(^(0))
- Q 1
+ Q
  ;
 SLOTS(RETURN,SC) ; Get available slots
  M RETURN=^SC(+SC,"ST")

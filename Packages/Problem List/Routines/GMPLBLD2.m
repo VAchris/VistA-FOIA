@@ -4,147 +4,190 @@ GMPLBLD2 ; SLC/MKB,JFR -- Bld PL Selection Lists cont ; 04/12/12
  ; This routine invokes IA #3991
  ;
 NEWGRP ; Change problem groups
- N NEWGRP,RETURN D FULL^VALM1
+ N NEWGRP,RETURN,MSG D FULL^VALM1
  I $D(GMPLSAVE),$$CKSAVE D SAVE
 NG1 S NEWGRP=$$GROUP("L") G:+NEWGRP'>0 NGQ G:+NEWGRP=+GMPLGRP NGQ
  I '$$LOCKCAT^GMPLAPI1(.RETURN,NEWGRP) D  G NG1
- . W $C(7),!!,"This category is currently being edited by another user!",!
+ . D EN^DDIOL($C(7))
+ . D BLD^DIALOG(1250000.073,,,"MSG")
+ . D EN^DDIOL(.MSG)
  D UNLKCAT^GMPLAPI1(+GMPLGRP) S GMPLGRP=NEWGRP
  D GETLIST^GMPLBLDC,BUILD^GMPLBLDC("^TMP(""GMPLIST"",$J)",GMPLMODE),HDR^GMPLBLDC
 NGQ S VALMBCK="R",VALMSG=$$MSG^GMPLX
  Q
  ;
 GROUP(L) ;
- N PRMPT,LNAME,X,LSTS,Y,RETURN,LSTS,FILE,FIELDS
-GR ;
- S Y=-1,PRMPT="Select CATEGORY NAME: "
- S FILE="PROBLEM SELECTION CATEGORY",FIELDS="NAME"
- W !,PRMPT R X:$S($D(DTIME):DTIME,1:300) I "^"[X!($G(X)="") S Y=-1 Q "^"
- I X="?" S %=$$GETCATS^GMPLAPI5(.LSTS) I $$LSTSH1(.LSTS,FILE,FIELDS) D PRINTALL(.LSTS) D:$L(L)>0 CH1
- I X?1"??".E D
- . I X="??" S %=$$GETCATS^GMPLAPI5(.LSTS) D PRINTALL(.LSTS) D:$L(L)>0 CH2
- E  D:X'="?"
+ N X,LSTS,Y,LSTS,FILE,FIELDS
+ S Y=-1 ;
+ F  D  Q:Y'=0
+ . K DIR,DTOUT,DUOUT,DIRUT
+ . S DIR(0)="FAO",DIR("?")="^D CH1^GMPLBLD2",DIR("??")="^D CH2^GMPLBLD2"
+ . D BLD^DIALOG(1250000.074,,,"DIR(""A"")")
+ . D ^DIR
+ . I $D(DIRUT) S Y=-1 Q
+ . I X?.E1P.E S Y=0 D PRTERR Q
  . S %=$$GETCATS^GMPLAPI5(.LSTS,X)
  . S Y=$$SELLST(.LSTS,X)
- G:Y<0 GR I Y=0,$L(L)'>0 W " ??",! G GR
- I Y=0 D
- . I $L(X)>30!(X?.N)!($L(X)<3)!'(X'?1P.E) W " ??" G GR
- . S ADD=$$ASKADD(X,"PROBLEM SELECTION CATEGORY") G:ADD=0 GR
- . S %=$$NEWCAT^GMPLAPI1(.RETURN,X) S Y=RETURN G:RETURN=0 GR
+ . I Y<0 S Y=0 Q
+ . I Y=0,$G(L)="" D PRTERR Q
+ . I Y=0,$L(X)>30!(X?.N)!($L(X)<3)!'(X'?1P.E) D PRTERR Q
+ . I Y=0 D
+ . . S FILE=$$EZBLD^DIALOG(1250000.512)
+ . . S ADD=$$ASKADD(X,FILE) Q:ADD=0
+ . . S %=$$NEWCAT^GMPLAPI1(.Y,X)
  S:Y<0 Y="^"
  Q Y
  ;
 CH1 ;
- W !,$C(9)_"You may enter a new PROBLEM SELECTION CATEGORY, if you wish"
- W !,$C(9)_"NAME MUST BE 3-30 CHARACTERS, NOT NUMERIC OR STARTING WITH"
- W !,$C(9)_"PUNCTUATION",!
+ N %,MSG,LSTS
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.075),,"?0")
+ S %=$$GETCATS^GMPLAPI5(.LSTS)
+ D PRINTALL(.LSTS,1)
+ I $G(L)'="" D
+ . D BLD^DIALOG(1250000.076,,,"MSG")
+ . D EN^DDIOL(.MSG)
  Q
  ;
 CH2 ;
- W !,$C(9)_"You may enter a new PROBLEM SELECTION CATEGORY, if you wish"
- W !,$C(9)_"This is the name given to this problem group to identify and describe it.",!
+ N %,MSG,LSTS
+ S %=$$GETCATS^GMPLAPI5(.LSTS)
+ D PRINTALL(.LSTS,1)
+ I $G(L)'="" D
+ . D BLD^DIALOG(1250000.077,,,"MSG")
+ . D EN^DDIOL(.MSG)
  Q
  ;
 NEWLST ; Change selection lists
- N NEWLST,RETURN D FULL^VALM1
+ N NEWLST,RETURN,MSG D FULL^VALM1
  I $D(GMPLSAVE),$$CKSAVE D SAVE
 NL1 S NEWLST=$$LIST("L") G:+NEWLST'>0 NLQ G:+NEWLST=+GMPLSLST NLQ
  I '$$LOCKLST^GMPLAPI1(.RETURN,NEWLST) D  G NL1
- . W $C(7),!!,"This list is currently being edited by another user!",!
+ . D EN^DDIOL($C(7))
+ . D BLD^DIALOG(1250000.078,,,"MSG")
+ . D EN^DDIOL(.MSG)
  D UNLKLST^GMPLAPI1(+GMPLSLST) S GMPLSLST=NEWLST
  D GETLIST^GMPLBLD,BUILD^GMPLBLD("^TMP(""GMPLIST"",$J)",GMPLMODE),HDR^GMPLBLD
 NLQ S VALMBCK="R",VALMSG=$$MSG^GMPLX
  Q
  ;
 LIST(L) ;
- N PRMPT,LNAME,X,LSTS,Y,RETURN,LSTS,ADD,CLINIC,FILE,FIELDS
-LS ;
- S Y=-1,PRMPT="Select LIST NAME: "
- S FILE="PROBLEM SELECTION LIST",FIELDS="NAME, or CLINIC"
- W !,PRMPT R X:$S($D(DTIME):DTIME,1:300) I "^"[X!($G(X)="") S Y=-1 Q "^"
- I X="?" S %=$$GETLSTS^GMPLAPI5(.LSTS) I $$LSTSH1(.LSTS,FILE,FIELDS) D PRINTALL(.LSTS,1) D:$L(L)>0 LH1
- I X?1"??".E D
- . I X="??" S %=$$GETLSTS^GMPLAPI5(.LSTS) D PRINTALL(.LSTS,1) D:$L(L)>0 LH2
- E  D:X'="?"
+ N DIR,X,LSTS,Y,ADD,CLINIC,FILE,FIELDS
+ S Y=-1 ;
+ F  D  Q:Y'=0
+ . K DIR,DTOUT,DUOUT,DIRUT
+ . S DIR(0)="FAO",DIR("?")="^D LH1^GMPLBLD2",DIR("??")="^D LH2^GMPLBLD2"
+ . D BLD^DIALOG(1250000.079,,,"DIR(""A"")")
+ . D ^DIR
+ . I $D(DIRUT) S Y=-1 Q
+ . I X?.E1P.E S Y=0 D PRTERR Q
  . S %=$$GETLSTS^GMPLAPI5(.LSTS,X)
  . S Y=$$SELLST(.LSTS,X)
- G:Y<0 LS I Y=0,$L(L)'>0 W " ??",! G LS
- I Y=0 D
- . I $L(X)>30!(X?.N)!($L(X)<3)!'(X'?1P.E) W " ??",! G LS
- . S ADD=$$ASKADD(X,FILE) G:ADD=0 LS
- . S CLINIC=$$CLINIC^GMPLBLD3("   "_FILE_" ") S:CLINIC="^" CLINIC=""
- . S %=$$NEWLST^GMPLAPI1(.RETURN,X,CLINIC) S Y=RETURN G:RETURN=0 LS
+ . I Y<0 S Y=0 Q
+ . I Y=0,$G(L)="" D PRTERR Q
+ . I Y=0,$L(X)>30!(X?.N)!($L(X)<3)!'(X'?1P.E) D PRTERR Q
+ . I Y=0 D
+ . . S FILE=$$EZBLD^DIALOG(1250000.511)
+ . . S ADD=$$ASKADD(X,FILE) Q:ADD=0
+ . . S CLINIC=$$CLINIC^GMPLBLD3("   "_FILE_" ") S:CLINIC="^" CLINIC=""
+ . . S %=$$NEWLST^GMPLAPI1(.Y,X,CLINIC)
  S:Y<0 Y="^"
  Q Y
  ;
-LH1 ;
- W !,$C(9)_"You may enter a new PROBLEM SELECTION LIST, if you wish"
- W !,$C(9)_"NAME MUST BE 3-30 CHARACTERS, NOT NUMERIC OR STARTING WITH"
- W !,$C(9)_"PUNCTUATION",!
+PRTERR ;
+ D EN^DDIOL(" ??",,"?0")
+ D EN^DDIOL("",,"!")
  Q
  ;
-LH2 ;
- W !,$C(9)_"You may enter a new PROBLEM SELECTION LIST, if you wish"
- W !,$C(9)_"This is a free text name for the list; it should contain the name of"
- W !,$C(9)_"the clinic or user who will be the primary user(s) of this list, as this"
- W !,$C(9)_"name will be used as an ID and a title.",!
+LH1 ;DIR("?")
+ N %,MSG,LSTS
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.080),,"?0")
+ S %=$$GETLSTS^GMPLAPI5(.LSTS)
+ D PRINTALL(.LSTS,1)
+ I $G(L)'="" D
+ . D BLD^DIALOG(1250000.081,,,"MSG")
+ . D EN^DDIOL(.MSG)
+ Q
+ ;
+LH2 ;DIR("??")
+ N %,MSG,LSTS
+ S %=$$GETLSTS^GMPLAPI5(.LSTS)
+ D PRINTALL(.LSTS,1)
+ I $G(L)'="" D
+ . D BLD^DIALOG(1250000.082,,,"MSG")
+ . D EN^DDIOL(.MSG)
  Q
  ;
 SELLST(LSTS,X) ;
- N CNT,Y,MAXP,CLINE,SEL,OUT,RE
+ N CNT,Y,MAXP,CLINE,SEL,OUT,RE,DIR,DTOUT
  I $D(LSTS)=0 Q -1
  S CNT=$P(LSTS(0),U,1)
  Q:CNT=0 0
- I CNT=1 W $E(LSTS(1,"NAME"),$L(X)+1,$L(LSTS(1,"NAME"))) Q LSTS(1,"ID")_U_LSTS(1,"NAME")
+ I CNT=1 D  Q LSTS(1,"ID")_U_LSTS(1,"NAME")
+ . D EN^DDIOL($E(LSTS(1,"NAME"),$L(X)+1,$L(LSTS(1,"NAME"))),,"?0")
  S MAXP=5,CLINE=1,SEL=0,OUT=0,RE=0
  F IND=1:1:CNT  D  Q:OUT
  . S CLINE=CLINE+1
- . W !,$C(9)_IND_$C(9)_LSTS(IND,"NAME")
+ . D EN^DDIOL($C(9)_IND_$C(9)_LSTS(IND,"NAME"))
  . I CLINE>MAXP D
- . . W !,"Press <RETURN> to see more, '^' to exit this list, OR"
+ . . D EN^DDIOL($$EZBLD^DIALOG(1250000.083))
  . I CLINE>MAXP!(IND=CNT) D
  . . S RE=1
- . . W !,"CHOOSE 1-"_IND_": " R SEL:$S($D(DTIME):DTIME,1:300) S:'$T OUT=1 Q
+ . . K DIR
+ . . S DIR(0)="NAO^1:"_IND
+ . . D BLD^DIALOG(1250000.084,IND,,"DIR(""A"")")
+ . . D ^DIR
+ . . S SEL=X
+ . . S:$D(DTOUT) OUT=1
+ . . Q
  . I RE D  Q
  . . S RE=0
  . . I SEL="^" S OUT=1 Q
  . . I $G(SEL)="" S CLINE=1 Q
  . . I $G(SEL)>IND S SEL=0,OUT=1 Q
  . . E  S OUT=1 Q
- Q:SEL>0 LSTS(SEL,"ID")_U_LSTS(SEL,"NAME") Q -1
+ Q:SEL>0 LSTS(SEL,"ID")_U_LSTS(SEL,"NAME")
+ Q -1
  ;
 PRINTALL(LSTS,CHOOSE) ;
  N IND,CNT,GMPQUIT,LINE
  S GMPQUIT=0,LINE=1
  I $D(LSTS)=0 Q
  S CNT=$P(LSTS(0),U,1) Q:CNT=0
- W:$G(CHOOSE) !,"   Choose from:"
+ D:$G(CHOOSE) EN^DDIOL($$EZBLD^DIALOG(1250000.085))
  F IND=1:1:CNT D
  . S LINE=LINE+1
- . W !,"   "_LSTS(IND,"NAME")
+ . D EN^DDIOL("   "_LSTS(IND,"NAME"))
  . I LINE>(IOSL-4) S LINE=1 S:'$$CONTINUE GMPQUIT=1 Q:$D(GMPQUIT)  Q
- W !
+ D EN^DDIOL("")
  Q
  ;
 CONTINUE() ; -- end of page prompt
  N DIR,X,Y
- S DIR(0)="E",DIR("A")=$C(9)_"'^' TO STOP"
+ S DIR(0)="E"
+ D BLD^DIALOG(1250000.086,,,"DIR(""A"")")
  D ^DIR
  Q +Y
  ;
 LSTSH1(LSTS,FILE,FIELDS) ; All items ??
- N DIR,X,Y,CNT
+ N DIR,X,Y,CNT,PARM
  S CNT=$P(LSTS(0),U,1) Q:CNT=0 1
- W !," Answer with "_FILE_" "_FIELDS
+ S PARM(1)=FILE
+ S PARM(2)=FIELDS
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.087,.PARM))
  Q:CNT<(IOSL-4) 1
- S:CNT>(IOSL-4) DIR("A")=" Do you want the entire "_CNT_"-Entry "_FILE_" List"
+ I CNT>(IOSL-4) D
+ . S PARM(1)=CNT
+ . S PARM(2)=FILE
+ . D BLD^DIALOG(1250000.088,.PARM,,"DIR(""A"")")
  S DIR(0)="YO"
  D ^DIR Q Y
  ;
 ASKADD(NEWEL,FILE) ; Ask
- N DIR,X,Y,CNT
+ N DIR,X,Y,CNT,PARM
  S CNT=$P(LSTS(0),U,1)
- S DIR("A")=" Are you adding '"_NEWEL_"' as a new "_FILE
+ S PARM(1)=NEWEL
+ S PARM(2)=FILE
+ D BLD^DIALOG(1250000.089,.PARM,,"DIR(""A"")")
  S DIR(0)="YO",DIR("B")="No"
  D ^DIR Q Y
  ;
@@ -154,9 +197,10 @@ LAST(ROOT) ; Returns last subscript
  Q J
  ;
 CKSAVE() ; Save [changes] ??
- N DIR,X,Y,TEXT S TEXT=$S($D(GMPLGRP):"category",1:"list")
- S DIR("A")="Save the changes to this "_TEXT_"? ",DIR("B")="YES"
- S DIR("?",1)="Enter YES to save the changes that have been made to this "_TEXT,DIR("?")="before exiting it; NO will leave this "_TEXT_" unchanged."
+ N DIR,X,Y,TEXT S TEXT=$S($D(GMPLGRP):$$EZBLD^DIALOG(1250000.056),1:$$EZBLD^DIALOG(1250000.072))
+ D BLD^DIALOG(1250000.090,TEXT,,"DIR(""A"")")
+ S DIR("B")="YES"
+ D BLD^DIALOG(1250000.091,TEXT,,"DIR(""?"")")
  S DIR(0)="YA" D ^DIR
  Q +Y
  ;
@@ -164,66 +208,73 @@ SAVE ; Save changes to group/list
  N GMPLQT,LABEL,DA
  S GMPLQT=0
  I $D(GMPLGRP) D  I GMPLQT Q
- . N ITM,CODE
+ . N ITM,CODE,MSG
  . S ITM=0
  . F  S ITM=$O(^TMP("GMPLIST",$J,ITM)) Q:'ITM!(GMPLQT)  D
  .. S CODE=$P(^TMP("GMPLIST",$J,ITM),U,4) Q:'$L(CODE)
  .. I '$$STATCHK^ICDAPIU(CODE,DT) S GMPLQT=1 Q
  . I 'GMPLQT Q  ;no inactive codes in the category
  . D FULL^VALM1
- . W !!,$C(7),"This Group contains problems with inactive ICD9 codes associated with them."
- . W !,"The codes must be edited and corrected before the group can be saved."
+ . D BLD^DIALOG(1250000.092,,,"MSG")
+ . D EN^DDIOL($C(7))
+ . D EN^DDIOL(.MSG)
  . N DIR,DUOUT,DTOUT,DIRUT
  . S DIR(0)="E" D ^DIR
  . S VALMBCK="R",GMPLQT=1
  . Q
  ;
  I '$D(GMPLGRP),$D(GMPLSLST) D  I GMPLQT Q
- . N GRP,RET
+ . N GRP,RET,MSG
  . S GRP=0
  . F  S GRP=$O(^TMP("GMPLIST",$J,"GRP",GRP)) Q:'GRP!(GMPLQT)  D
  .. I $$VALGRP^GMPLAPI6(.RET,GRP) Q  ;no inactive codes in the GROUP
  .. S GMPLQT=1
  . I 'GMPLQT Q  ; all groups and problems OK
  . D FULL^VALM1
- . W !!,$C(7),"This Selection List contains problems with inactive ICD9 codes associated with"
- . W !,"them. The codes must be edited and corrected before the list can be saved."
+ . D BLD^DIALOG(1250000.093,,,"MSG")
+ . D EN^DDIOL($C(7))
+ . D EN^DDIOL(.MSG)
  . N DIR,DUOUT,DTOUT,DIRUT
  . S DIR(0)="E" D ^DIR
  . S VALMBCK="R",GMPLQT=1
  . Q
- W !!,"Saving ..."
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.094),,"!!")
  N SOURCE,RETURN
  M SOURCE=^TMP("GMPLIST",$J)
  S %=$S($D(GMPLGRP):$$SAVGRP^GMPLAPI1(.RETURN,GMPLGRP,.SOURCE),1:$$SAVLST^GMPLAPI1(.RETURN,GMPLSLST,.SOURCE))
  K GMPLSAVE,SOURCE S:$D(GMPLGRP) GMPSAVED=1
- S VALMBCK="Q" W " done." H 1
+ S VALMBCK="Q" D EN^DDIOL($$EZBLD^DIALOG(1250000.095),,"?0") H 1
  Q
  ;
 DELETE ; Delete problem group
- N DIR,X,Y,DA,DIK,IFN,CNT,RETURN S VALMBCK=$S(VALMCC:"",1:"R")
+ N DIR,X,Y,DA,DIK,IFN,CNT,RETURN,MSG S VALMBCK=$S(VALMCC:"",1:"R")
  S %=$$CATUSED^GMPLAPI1(.RETURN,+GMPLGRP)
- I RETURN W $C(7),!!,">>>  This category belongs to at least one problem selection list!",!,"     CANNOT DELETE" H 2 Q
- S DIR(0)="YA",DIR("B")="NO",DIR("A")="Are you sure you want to delete the entire '"_$P(GMPLGRP,U,2)_"' category? "
- S DIR("?")="Enter YES to completely remove this category and all its items."
+ I RETURN D  H 2 Q
+ . D BLD^DIALOG(1250000.096,,,"MSG")
+ . D EN^DDIOL($C(7))
+ . D EN^DDIOL(.MSG)
+ S DIR(0)="YA",DIR("B")="NO"
+ D BLD^DIALOG(1250000.097,$P(GMPLGRP,U,2),,"DIR(""A"")")
+ D BLD^DIALOG(1250000.098,,,"DIR(""?"")")
  D ^DIR Q:'Y
 DEL1 ; Ok, go for it ...
- W !!,"Deleting category items ..."
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.099),"","!!")
  K RETURN
  S %=$$DELCAT^GMPLAPI1(.RETURN,+GMPLGRP)
- D UNLKCAT^GMPLAPI1(+GMPLGRP) S GMPLGRP=0 K GMPLSAVE W ". <done>"
+ D UNLKCAT^GMPLAPI1(+GMPLGRP) S GMPLGRP=0 K GMPLSAVE
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.100),"","")
  D NEWGRP S:+GMPLGRP'>0 VALMBCK="Q"
  Q
  ;
 ASSIGN ; allow lookup of PROB SEL LIST and assign to users
  ;
- N DIC,X,Y,DUOUT,DTOUT,GMPLSLST,RET
+ N DIC,X,Y,DUOUT,DTOUT,GMPLSLST,RET,MSG
  S Y=$$LIST("")
  Q:Y'>0
  I '$$VALLIST^GMPLAPI6(.RET,+Y) D  G ASSIGN
- . W !!,$C(7),"This Selection List contains problems with inactive ICD9 codes associated with"
- . W !,"them. The codes must be edited and corrected before the list can be assigned to",!,"users.",!!
- ;
+ . D BLD^DIALOG(1250000.093,,,"MSG")
+ . D EN^DDIOL($C(7))
+ . D EN^DDIOL(.MSG)
  S GMPLSLST=+Y
  D USERS^GMPLBLD3("1")
  Q

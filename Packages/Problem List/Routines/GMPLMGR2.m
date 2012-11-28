@@ -17,8 +17,8 @@ BLDPROB(IFN) ; Build Line for Problem in List
  S %=$$DETAILX^GMPLAPI2(.GMPL,IFN,"","")
  S DELETED=($E(GMPL("CONDITION"))="H")
  S STATUS=$E(GMPL("STATUS"))
- S PROBLEM=$S(DELETED:"< DELETED >",1:GMPL("NARRATIVE"))
- I 'DELETED,GMPL("ONSET") S PROBLEM=PROBLEM_", Onset "_GMPL("ONSET")
+ S PROBLEM=$S(DELETED:$$EZBLD^DIALOG(1250000.317),1:GMPL("NARRATIVE"))
+ I 'DELETED,GMPL("ONSET") S PROBLEM=PROBLEM_$$EZBLD^DIALOG(1250000.318,GMPL("ONSET"))
  S RESOLVED=GMPL("RESOLVED")
  S ICD=GMPL("DIAGNOSIS")
  S SC=GMPL("SC")
@@ -45,14 +45,10 @@ BLDPROB(IFN) ; Build Line for Problem in List
  Q
  ;
 HELP ; Help Code
- N X W !!?4,"You may take a variety of actions from this prompt.  To update"
- W !?4,"the problem list select from Add, Remove, Edit, Inactivate,"
- W !?4,"and Enter Comment; you will then be prompted for the problem"
- W !?4,"number.  To see all of this patient's problems, both active and"
- W !?4,"inactive, select Show All Problems; select Print to print the"
- W !?4,"same complete list in a chartable format.  To see a listing of"
- W !?4,"actions that facilitate navigating the list, enter '??'."
- W !!,"Press <return> to continue ... " R X:DTIME
+ N DIR
+ S DIR(0)="EA"
+ D BLD^DIALOG(1250000.340,,,"DIR(""A"")")
+ D ^DIR
  S VALMSG=$$MSG^GMPLX,VALMBCK=$S(VALMCC:"",1:"R")
  Q
  ;
@@ -66,9 +62,10 @@ EXIT ; Exit Code
 AUTO ; Print Problem List when Exiting Patient?
  ;   Called from EXIT,NEWPAT^GMPLMGR1
  N DIR,X,Y Q:'GMPARAM("PRT")  Q:'$D(GMPRINT)
- S DIR(0)="YA",DIR("A")="Print a new problem list? ",DIR("B")="YES"
- S DIR("?",1)="Press <return> to generate a new complete problem list for this patient;",DIR("?")="enter NO to continue without printing."
- W $C(7),!!,">>>  THIS PATIENT'S PROBLEM LIST HAS CHANGED!"
+ S DIR(0)="YA",DIR("A")=$$EZBLD^DIALOG(1250000.341),DIR("B")="YES"
+ D BLD^DIALOG(1250000.342,,,"DIR(""?"")")
+ D EN^DDIOL($C(7))
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.343),,"!!")
  D ^DIR I $D(DTOUT)!($D(DTOUT)) S GMPQUIT=1 Q
  Q:'Y  D VAF^GMPLPRNT,DEVICE^GMPLPRNT G:$D(GMPQUIT) AUTQ
  D CLEAR^VALM1,PRT^GMPLPRNT
@@ -77,8 +74,9 @@ AUTQ ; Quit Auto-Print
  Q
  ;
 SHOW ; Show Current View of List
- N VIEW,NUM,NAME S VIEW=$E(GMPLVIEW("VIEW")),NUM=$L(GMPLVIEW("VIEW"),"/")
- W !!,"CURRENT VIEW: "_$S(VIEW="S":"Inpatient, ",1:"Outpatient, ")
+ N VIEW,NUM,NAME,MSG S VIEW=$E(GMPLVIEW("VIEW")),NUM=$L(GMPLVIEW("VIEW"),"/")
+ S MSG=$S(VIEW="S":1250000.344,1:1250000.345)
+ D EN^DDIOL($$EZBLD^DIALOG(MSG),,"!!")
  I '((NUM>2)!($L(GMPLVIEW("ACT")))!(GMPLVIEW("PROV"))) W "all problems" Q
  W $S(GMPLVIEW("ACT")="A":"active",GMPLVIEW("ACT")="I":"inactive",1:"all")_" problems"
  I NUM>2 W " from "_$S(GMPLVIEW("VIEW")=$$USERVIEW^GMPLEXT(DUZ):"preferred",1:"selected")_$S(VIEW="S":" services",1:" clinics")
@@ -86,9 +84,10 @@ SHOW ; Show Current View of List
  Q
  ;
 ENVIEW ; Entry Action to Display Appropriate View Menu
- N XQORM,X,Y,GMPLX S GMPLX=0 D SHOW S X="GMPL VIEW "_$S($E(GMPLVIEW("VIEW"))="S":"INPAT",1:"OUTPAT")
+ N XQORM,X,Y,GMPLX,MSG S GMPLX=0 D SHOW S X="GMPL VIEW "_$S($E(GMPLVIEW("VIEW"))="S":"INPAT",1:"OUTPAT")
  S XQORM=+$$PROTKEY^GMPLEXT(X)_";ORD(101,",XQORM(0)="3AD"
- W !,"You may change your view of this patient's problem list by selecting one or",!,"more of the following attributes to alter:",!
+ D BLD^DIALOG(1250000.351,,,"MSG")
+ D EN^DDIOL(.MSG)
  D EN^XQORM F  S GMPLX=$O(Y(GMPLX)) Q:GMPLX'>0  X:$$ENACT^GMPLEXT(+$P(Y(GMPLX),U,2))'="" $$ENACT^GMPLEXT(+$P(Y(GMPLX),U,2))
  Q
  ;
@@ -100,9 +99,9 @@ EXVIEW ; Exit Action to Rebuild List w/New View
  Q
  ;
 FMTSP(STR) ; Formats SP for display
- Q:STR="AGENT ORANGE" "Agent Orange"
- Q:STR="RADIATION" "Radiation"
- Q:STR="ENV CONTAMINANTS" "Contaminants"
- Q:STR="HEAD/NECK CANCER" "Head/Neck Cancer"
- Q:STR="MIL SEXUAL TRAUMA" "Mil Sexual Trauma"
+ Q:STR="AGENT ORANGE" $$EZBLD^DIALOG(1250000.352)
+ Q:STR="RADIATION" $$EZBLD^DIALOG(1250000.353)
+ Q:STR="ENV CONTAMINANTS" $$EZBLD^DIALOG(1250000.354)
+ Q:STR="HEAD/NECK CANCER" $$EZBLD^DIALOG(1250000.355)
+ Q:STR="MIL SEXUAL TRAUMA" $$EZBLD^DIALOG(1250000.356)
  Q ""

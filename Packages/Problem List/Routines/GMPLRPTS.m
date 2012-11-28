@@ -10,8 +10,11 @@ FMTPAT(LINE) ; Does formatting for PAT tag
 PAT ; List patients having data in Problem file #9000011
  D WAIT^DICD
  S GMPRT=$$PPROBCNT^GMPLAPI7("^TMP(""GMPRT"","_$J_")")
- I GMPRT'>0 W $C(7),!!,"No patient data available.",! G PATQ
- S GMPLHDR="PROBLEM LIST PATIENT LISTING",GMPLCNT=1
+ I GMPRT'>0 D  G PATQ
+ . D EN^DDIOL($C(7))
+ . D EN^DDIOL($$EZBLD^DIALOG(1250000.442))
+ . D EN^DDIOL("")
+ S GMPLHDR=$$EZBLD^DIALOG(1250000.443),GMPLCNT=1
  D DEVICE G:$D(GMPQUIT) PATQ
  D PRTFMT("D FMTPAT(.LINE)")
 PATQ D KILL
@@ -24,8 +27,11 @@ PROB1 D SEARCH^GMPLX(.X,.Y) G:Y'>0 PROBQ
  S STATUS=$$STATUS G:STATUS="^" PROBQ
  D WAIT^DICD
  S GMPRT=$$PPRBSPEC^GMPLAPI7("^TMP(""GMPRT"","_$J_")",GMPTERM,GMPTEXT,STATUS)
- I GMPRT'>0 W $C(7),!!,"No patient data available.",! D KILL G PROB1
- S GMPLHDR="PATIENTS WITH '"_$$UP^XLFSTR($P(GMPTERM,U,2))_"'",GMPLCNT=0
+ I GMPRT'>0 D  D KILL G PROB1
+ . D EN^DDIOL($C(7))
+ . D EN^DDIOL($$EZBLD^DIALOG(1250000.442))
+ . D EN^DDIOL("")
+ S GMPLHDR=$$EZBLD^DIALOG(1250000.444,$$UP^XLFSTR($P(GMPTERM,U,2))),GMPLCNT=0
  D DEVICE I $D(GMPQUIT) D KILL G PROB1
  D PRT D KILL G PROB1
 PROBQ D KILL
@@ -56,17 +62,24 @@ PRTFMT(FMT) ; FMT formats ^TMP("GMPRT",$J,NAME)
  . S LINE=^TMP("GMPRT",$J,NAME)
  . I FMT]"" X FMT
  . W !,NAME,?60,LINE
- W:'$D(GMPQUIT) !!?10,"Total of "_GMPRT_" patients found."
+ D:'$D(GMPQUIT) EN^DDIOL($$EZBLD^DIALOG(1250000.445,GMPRT),,"!!?10")
  W:IOST?1"P".E @IOF I IOST'?1"P".E,'$D(GMPQUIT) D RETURN
  I $D(ZTQUEUED) S ZTREQ="@" D KILL
  D ^%ZISC
  Q
  ;
 HDR ; Prints report header
- W @IOF S PAGE=PAGE+1
- W GMPLHDR,?60,$$EXTDT^GMPLX(DT),?70,"PAGE "_PAGE,!!
- W "Patient Name",?60,$S(GMPLCNT:"# Active/Inactive",1:"Status"),!
- W $$REPEAT^XLFSTR("-",79),!
+ N MSG
+ W @IOF
+ S PAGE=PAGE+1
+ D EN^DDIOL(GMPLHDR,,"?0")
+ D EN^DDIOL($$EXTDT^GMPLX(DT),,"?60")
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.446),,"?70")
+ D EN^DDIOL($$EZBLD^DIALOG(1250000.447),,"!!")
+ S MSG=$S(GMPLCNT:1250000.448,1:1250000.449)
+ D EN^DDIOL($$EZBLD^DIALOG(MSG),,"?60")
+ D EN^DDIOL($$REPEAT^XLFSTR("-",79))
+ D EN^DDIOL("")
  Q
  ;
 RETURN ; Checks for end-of-page, continue
@@ -78,7 +91,8 @@ RETURN ; Checks for end-of-page, continue
 STATUS() ; Prompts for problem status to search for
  N DIR,X,Y
  S DIR(0)="SA^A:ACTIVE;I:INACTIVE;B:BOTH;"
- S DIR("A")="Select STATUS: ",DIR("B")="ACTIVE"
- S DIR("?",1)="To list only those patients with this problem in a specific status, select:",DIR("?",2)="          ACTIVE",DIR("?",3)="          INACTIVE",DIR("?")="          BOTH ACTIVE & INACTIVE"
+ S DIR("B")="ACTIVE"
+ D BLD^DIALOG(1250000.450,,,"DIR(""A"")")
+ D BLD^DIALOG(1250000.451,,,"DIR(""?"")")
  D ^DIR S:$D(DTOUT)!($D(DUOUT)) Y="^" S:Y="B" Y="AI"
  Q Y

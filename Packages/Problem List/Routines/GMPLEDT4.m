@@ -1,22 +1,27 @@
 GMPLEDT4 ; SLC/MKB -- Problem List Edit actions cont ;09/14/12
  ;;2.0;Problem List;**5,260002**;Aug 25, 1994
 TERM ; edit field 1.01
- N PROB,TERM,ICD,DUP,Y
-T1 W !,"PROBLEM: "_$P(GMPFLD(.05),U,2)_"//"
+ N PROB,TERM,ICD,DUP,Y,MSG
+T1 D EN^DDIOL($$EZBLD^DIALOG(1250000.267,$P(GMPFLD(.05),U,2)))
  R PROB:DTIME S:'$T DTOUT=1 I $D(DTOUT)!(PROB="^") S GMPQUIT=1 Q
  I PROB?1"^".E D JUMP^GMPLEDT3(PROB) Q:$D(GMPQUIT)!($G(GMPLJUMP))  K:$G(GMPIFN) GMPLJUMP G T1
  Q:PROB=""  Q:PROB=$P(GMPFLD(.05),U,2)  ; no change
  I PROB["?" D  G T1
- . W !!?4,"Enter a description of this problem, up to 80 characters.",!
+ . K MSG
+ . D BLD^DIALOG(1250000.268,,,"MSG")
+ . D EN^DDIOL(.MSG)
  I PROB="@",'+$G(GMPIFN) D  S GMPQUIT=1 Q
- .W !!?5,$C(7),$C(7),"This problem has not yet been saved."
- .W !?5,"Enter <Q>uit and it will not be added to the list.",!!
- .K DIR S DIR("A")="Press RETURN to redisplay the problem text"
- .S DIR(0)="E" D ^DIR K DIR
+ . K MSG
+ . D BLD^DIALOG(1250000.269,,,"MSG")
+ . D EN^DDIOL($C(7)_$C(7))
+ . D EN^DDIOL(.MSG)
+ . K DIR
+ . D BLD^DIALOG(1250000.270,"DIR(""A"")")
+ . S DIR(0)="E" D ^DIR K DIR
  I PROB="@" D DELETE^GMPLEDT2 S:VALMBCK="Q" GMPQUIT=1 Q:$D(GMPQUIT)  G T1
 T2 ; new text -- pass to look-up
  I '$D(GMPLUSER)!($D(GMPLUSER)&('GMPARAM("CLU"))) S GMPFLD(1.01)="",GMPFLD(.05)=U_PROB Q
- D SEARCH^GMPLX(.PROB,.Y,"PROBLEM: ","1") ; pass to CLU
+ D SEARCH^GMPLX(.PROB,.Y,$$EZBLD^DIALOG(1250000.271),"1") ; pass to CLU
  S TERM=$G(Y),ICD=$G(Y(1)) I +TERM'>0 S GMPQUIT=1 Q
  N %
  S %=$$DUPL^GMPLAPI2(.DUP,+GMPDFN,+TERM,PROB,0)
@@ -28,8 +33,9 @@ T2 ; new text -- pass to look-up
  ;
 TEXT(DFLT) ; Enter/edit provider narrative text (no lookup)
  N DIR,X,Y
- S DIR(0)="FAO^2:80",DIR("A")="PROBLEM: " S:$L(DFLT) DIR("B")=DFLT
- S DIR("?")="Enter a description of this problem, up to 80 characters."
+ S DIR(0)="FAO^2:80" S:$L(DFLT) DIR("B")=DFLT
+ D BLD^DIALOG(1250000.271,,,"DIR(""A"")")
+ D BLD^DIALOG(1250000.268,,,"DIR(""?"")")
  D ^DIR S:$D(DTOUT)!(X="^") Y="^" S:'$L(DFLT)&(X="") Y="^"
  Q Y
  ;
@@ -38,42 +44,51 @@ NTES ; Edit existing note, display # in XQORNOD(0)
  S NT=$S(GMPVA:7,1:5) S:$$KCHK^XUSRB("GMPL ICD CODE") NT=NT+1
  S NUM=+$P(XQORNOD(0),U,3)-NT Q:NUM'>0
  S NOTE=GMPFLD(10,NUM),DEFAULT=$P(NOTE,U,3)
- S PROMPT="NOTE "_$$EXTDT^GMPLX($P(NOTE,U,5))_": "
+ S PROMPT=$$EZBLD^DIALOG(1250000.272,$$EXTDT^GMPLX($P(NOTE,U,5)))
  D EDNOTE Q:$D(GMPQUIT)
  S $P(GMPFLD(10,NUM),U,3)=Y
  Q
  ;
 EDNOTE ; Edit note text given PROMPT,DEFAULT (returns X,Y)
- N DIR S DIR(0)="FAO^1:100",DIR("A")=PROMPT
+ N DIR,MSG S DIR(0)="FAO^1:100",DIR("A")=PROMPT
  S:$L(DEFAULT) DIR("B")=DEFAULT
- S DIR("?",1)="Enter any text you wish appended to this problem, up to 60 characters"
- S DIR("?")="in length.  You may append as many comments to a problem as you wish."
+ D BLD^DIALOG(1250000.273,,,"DIR(""?"")")
 ED1 D ^DIR I $D(DTOUT)!(Y="^") S GMPQUIT=1,Y="" Q
  I Y?1"^".E D JUMP^GMPLEDT3(Y) Q:$D(GMPQUIT)!($G(GMPLJUMP))  K:$G(GMPIFN) GMPLJUMP G ED1
  Q:Y=DEFAULT  I X="@" D  Q:$D(GMPQUIT)!(Y="")  G ED1
  . N DIR,X S DIR(0)="YAO",DIR("B")="NO"
- . S DIR("A")="   Are you sure you want to delete this comment? "
- . S DIR("?")="   Enter YES to completely remove this comment from this patient's problem."
- . W $C(7) D ^DIR I $D(DUOUT)!($D(DTOUT)) S GMPQUIT=1,Y="" Q
+ . D BLD^DIALOG(1250000.274,,,"DIR(""A"")")
+ . D BLD^DIALOG(1250000.275,,,"DIR(""?"")")
+ . D EN^DDIOL($C(7),,"?0") D ^DIR I $D(DUOUT)!($D(DTOUT)) S GMPQUIT=1,Y="" Q
  . S:Y Y=""
- I $L(X)>60 W !!,"Text may not exceed 60 characters!",!,$C(7) S DIR("B")=$E(X,1,60) G ED1
+ I $L(X)>60 D  G ED1
+ . K MSG
+ . D BLD^DIALOG(1250000.276,,,"MSG")
+ . D EN^DDIOL($C(7),,"?0")
+ . D EN^DDIOL(.MSG)
+ . S DIR("B")=$E(X,1,60)
  S Y=X
  Q
  ;
 RESOLVED ; edit field 1.07
- N X,Y,PROMPT,HELPMSG,DEFAULT,ONSET S ONSET=+$G(GMPFLD(.13))
- S DEFAULT=$G(GMPFLD(1.07)),PROMPT="DATE RESOLVED: "
- S HELPMSG="Enter the date this problem became resolved or inactive, as precisely as known."
+ N X,Y,PROMPT,HELPMSG,DEFAULT,ONSET,MSG S ONSET=+$G(GMPFLD(.13))
+ S DEFAULT=$G(GMPFLD(1.07)),PROMPT=$$EZBLD^DIALOG(1250000.277)
+ S HELPMSG=$$EZBLD^DIALOG(1250000.278)
 R1 D DATE^GMPLEDT2 Q:$D(GMPQUIT)!($G(GMPLJUMP))
- I Y,ONSET,Y<ONSET W !!,"Date Resolved cannot be prior to the Date of Onset!",$C(7) G R1
+ I Y,ONSET,Y<ONSET D  G R1
+ . K MSG
+ . D BLD^DIALOG(1250000.279,,,"MSG")
+ . D EN^DDIOL(.MSG)
+ . D EN^DDIOL($C(7))
  S GMPFLD(1.07)=Y S:Y'="" GMPFLD(1.07)=GMPFLD(1.07)_U_$$EXTDT^GMPLX(Y)
  Q
  ;
 PRIORITY ; edit field 1.14
  N DIR,X,Y
- S DIR(0)="SAO^A:ACUTE;C:CHRONIC;",DIR("A")="  (A)cute or (C)hronic? "
+ S DIR(0)="SAO^A:ACUTE;C:CHRONIC;"
+ D BLD^DIALOG(1250000.280,,,"DIR(""A"")")
  S:$L($G(GMPFLD(1.14))) DIR("B")=$P(GMPFLD(1.14),U,2)
- S DIR("?",1)="  You may further refine the status of this problem by designating it",DIR("?",2)="  as ACUTE or CHRONIC; problems marked as ACUTE will be flagged on the",DIR("?")="  list display with a '*'."
+ D BLD^DIALOG(1250000.281,,,"DIR(""?"")")
 PR1 D ^DIR I $D(DTOUT)!(Y="^") S GMPQUIT=1 Q
  I Y?1"^".E D JUMP^GMPLEDT3(Y) Q:$D(GMPQUIT)!($G(GMPLJUMP))  K:$G(GMPIFN) GMPLJUMP G PR1
  S:Y'="" Y=Y_U_$S(Y="A":"ACUTE",1:"CHRONIC")
