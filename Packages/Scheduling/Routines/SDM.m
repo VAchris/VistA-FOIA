@@ -1,4 +1,4 @@
-SDM ;SF/GFT,ALB/BOK - MAKE AN APPOINTMENT ; 10/18/2012
+SDM ;SF/GFT,ALB/BOK - MAKE AN APPOINTMENT ; 12/11/2012
  ;;5.3;Scheduling;**15,32,38,41,44,79,94,167,168,218,223,250,254,296,380,478,441,260003**;AUG 13, 1993;Build 14
  ;                                           If defined...
  ; appt mgt vars:  SDFN := DFN of patient....will not be asked
@@ -68,7 +68,7 @@ PEND S %=""
  . S ROU="LSTETNS^SDMLST",PRMPT="Select ETHNICITY: "
  . S FILE="ETHNICITY",FIELDS=""
  . S ETN=$$SELECT^SDMUTL(ROU,PRMPT,FILE,FIELDS)
- . I +ETN>0 S %=$$SETETN^SDMAPI3(DFN,ETN)
+ . I +ETN>0 N RE S %=$$SETETN^SDMAPI3(.RE,DFN,ETN)
  ;Prompt for RACE if no value on file
  I '$O(PAT("RACE INFORMATION","")) D
  . D RACE
@@ -126,13 +126,14 @@ RACE ; Set race
  D SETRACE
  Q
 SETRACE ;
+ N RE
  S ETN=$$SELECT^SDMUTL(ROU,PRMPT,FILE,FIELDS,,.HLP1,.HLP2,ROU1)
  I +ETN>0  D
  . N RES
  . S %=$$GETPRES^SDMAPI3(.RES,DFN)
  . S ADD=$$ASKADD($P(ETN,U,2),+RES(0))
- . S:ADD %=$$SETRACE^SDMAPI3(DFN,ETN)
- . D SETRACE
+ . S:ADD %=$$SETRACE^SDMAPI3(.RE,DFN,ETN)
+ . G SETRACE
  Q
 HLP1 ;
  W !?4,"You may enter a new RACE INFORMATION, if you wish"

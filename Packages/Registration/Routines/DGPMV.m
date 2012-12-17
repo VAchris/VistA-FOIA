@@ -1,5 +1,5 @@
-DGPMV ;ALB/MRL/MIR - PATIENT MOVEMENT DRIVER; 10 MAR 89
- ;;5.3;Registration;**60,200,268**;Aug 13, 1993
+DGPMV ;ALB/MRL/MIR - PATIENT MOVEMENT DRIVER; 12/14/2012
+ ;;5.3;Registration;**60,200,268,260003**;Aug 13, 1993
  ;
  ;OPTION         VALUE OF DGPMT
  ;------         --------------
@@ -11,6 +11,7 @@ DGPMV ;ALB/MRL/MIR - PATIENT MOVEMENT DRIVER; 10 MAR 89
  ;t.s. transfer         6
  ;
 PAT K ORACTION,ORMENU
+ I DGPMT=1 D ^DGPMVA Q
  D LO^DGUTL I '$D(IOF) S IOP=$S($D(ION):ION,1:"HOME") D ^%ZIS K IOP
 PAT1 W ! I DGPMT=5 S DGPMN=0 D SPCLU^DGPMV0 G OREN:'DGER,Q
  S DIC="^DPT(",DIC(0)="AEQMZ",DIC("A")=$S('$D(DGPMPC):$P("Admit^Transfer^Discharge^Check-in^Check-out^Specialty Change for","^",DGPMT),1:"Provider Change for")_" PATIENT: "

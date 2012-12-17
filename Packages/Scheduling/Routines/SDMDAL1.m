@@ -1,4 +1,4 @@
-SDMDAL1 ;RGI/CBR - APPOINTMENT API; 10/26/2012
+SDMDAL1 ;RGI/CBR - APPOINTMENT API; 12/10/2012
  ;;5.3;scheduling;**260003**;08/13/93;
 GETCLN(RETURN,CLN,INT,EXT,REZ) ; Get clinic detail
  N FILE,SFILES,FLDS
@@ -17,11 +17,14 @@ GETCLNX(RETURN,SC) ; Get clinic detailx
  Q
  ;
 LSTCLNS(RETURN,SEARCH,START,NUMBER) ; Return clinics filtered by name.
- N FILE,FIELDS,RET,SCR
- S FILE="44",FIELDS="@;.01"
+ N FILE,FIELDS,RET,SCR,S
+ S FILE="44",FIELDS="@;.01;1"
  S:$D(START)=0 START="" S:$D(SEARCH)=0 SEARCH=""
+ S S=SEARCH
  S SCR="I $P(^(0),U,3)=""C"",'$G(^(""OOS""))"
- D LIST^DIC(FILE,"",FIELDS,"",$G(NUMBER),.START,SEARCH,"B",.SCR,"","RETURN")
+ S:S'="" SCR=SCR_",$E($P(^(0),U),1,$L(S))=S!($E($P(^(0),U,2),1,$L(S))=S)"
+ S:S'="" SCR=SCR_"!($E($P(^(0),U,2),1,$L(S))=$$UP^XLFSTR(S))"
+ D LIST^DIC(FILE,"",FIELDS,"",$G(NUMBER),.START,,"B",.SCR,"","RETURN")
  Q
  ;
 GETCSC(FLDS,CSC) ; Get Clinic Stop Code
