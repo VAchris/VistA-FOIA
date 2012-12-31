@@ -133,7 +133,7 @@ LSTNSTA1(RETURN,SEARCH,START,NUMBER) ; Returns the list of states that allow no-
  Q
  ;
 GETAPT0(DFN,SD) ; Get appointment 0 node
- Q $G(^DPT(DFN,"S",SD,0))
+ Q $G(^DPT(DFN,"S",+SD,0))
  ;
 GETPAPT(RETURN,DFN,SD) ; Get patient appointment
  N IND
